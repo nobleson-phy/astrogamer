@@ -77,6 +77,9 @@ const UI = {
     controlsShoot: "Move: ◀ ▶ · arrows · drag  |  Fire: FIRE · space",
     controlsMove: "Move: ◀ ▶ · arrow keys · drag",
     controlsTap: "Tap the stars in number order",
+    howToPlay: "How to play",
+    labelGoal: "Goal", labelControls: "Controls", labelAvoid: "Avoid", labelShields: "Shields",
+    shieldsRule: "Lose all your shields and the game ends.",
   },
   ja: {
     eyebrow: "天文学をめぐるインタラクティブな旅",
@@ -121,6 +124,9 @@ const UI = {
     controlsShoot: "移動：◀ ▶ · 矢印 · ドラッグ  |  発射：FIRE · スペース",
     controlsMove: "移動：◀ ▶ · 矢印キー · ドラッグ",
     controlsTap: "星を番号順にタップ",
+    howToPlay: "遊び方",
+    labelGoal: "目的", labelControls: "操作", labelAvoid: "注意", labelShields: "シールド",
+    shieldsRule: "シールドをすべて失うとゲーム終了。",
   },
 };
 
@@ -1118,7 +1124,7 @@ function slStars(ctx, g, complete) {
 
 const GAMES_DEF = {
   solar: {
-    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, howto: { en: "Shoot the falling asteroids before they reach you.", ja: "降ってくる小惑星を、届く前に撃ち落とそう。" }, pad: "lrf" },
+    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a shield.", ja: "岩を最下部まで落とすか自機に当てるとシールドを1つ失う。" }, pad: "lrf" },
     init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.cd = 0; g.spawn = 0.5; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 330;
@@ -1144,7 +1150,7 @@ const GAMES_DEF = {
     },
   },
   star: {
-    meta: { title: { en: "Star Catcher", ja: "スターキャッチャー" }, howto: { en: "Catch the glowing hydrogen; dodge the dark rocks.", ja: "光る水素をキャッチし、暗い岩を避けよう。" }, pad: "lr" },
+    meta: { title: { en: "Star Catcher", ja: "スターキャッチャー" }, goal: { en: "Catch the glowing hydrogen orbs — each one scores points.", ja: "光る水素の玉をキャッチ——1個ごとに得点。" }, avoid: { en: "Catching a dark rock costs a shield, so steer around them.", ja: "暗い岩をキャッチするとシールドを失うので、よけて進もう。" }, pad: "lr" },
     init: (g, api) => { g.x = api.W / 2; g.items = []; g.spawn = 0.4; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 340, cy = H - 26;
@@ -1172,7 +1178,7 @@ const GAMES_DEF = {
     },
   },
   sky: {
-    meta: { title: { en: "Constellation Connect", ja: "星座つなぎ" }, howto: { en: "Tap the stars in number order to draw each constellation before the timer runs out.", ja: "時間内に星を番号順にタップして、星座を描こう。" }, pad: "none" },
+    meta: { title: { en: "Constellation Connect", ja: "星座つなぎ" }, goal: { en: "Tap the numbered stars in order (1, 2, 3…) to draw it. Finish faster for more points.", ja: "番号のついた星を順番（1・2・3…）にタップして描こう。早いほど高得点。" }, avoid: { en: "A wrong star, or running out of time, costs a shield.", ja: "違う星をタップするか時間切れになるとシールドを失う。" }, pad: "none" },
     init: (g, api) => { g.bg = makeStars(api.W, api.H, 90); slSetup(g, api); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, lang } = api;
@@ -1199,7 +1205,7 @@ const GAMES_DEF = {
     },
   },
   scale: {
-    meta: { title: { en: "Warp Run", ja: "ワープラン" }, howto: { en: "Fly outward and dodge everything. Survive as long as you can.", ja: "宇宙の彼方へ。すべてをかわして、できるだけ長く生き延びよう。" }, pad: "lr" },
+    meta: { title: { en: "Warp Run", ja: "ワープラン" }, goal: { en: "Fly outward and survive — your score climbs the longer you last.", ja: "宇宙の彼方へ。長く生き延びるほどスコアが伸びる。" }, avoid: { en: "Everything is an obstacle. One collision costs a shield, and it keeps speeding up.", ja: "すべてが障害物。1回ぶつかるとシールドを失い、速度はどんどん上がる。" }, pad: "lr" },
     init: (g, api) => { g.x = api.W / 2; g.obs = []; g.spawn = 0.5; g.bg = Array.from({ length: 80 }, () => ({ x: Math.random() * api.W, y: Math.random() * api.H, len: 4 + Math.random() * 10, sp: 200 + Math.random() * 300 })); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 360, ramp = 1 + g.t * 0.05;
@@ -1221,6 +1227,15 @@ const GAMES_DEF = {
     },
   },
 };
+
+function HowRow({ label, text, color }) {
+  return (
+    <div style={styles.howRow}>
+      <span style={{ ...styles.howLabel, color }}>{label}</span>
+      <span style={styles.howText}>{text}</span>
+    </div>
+  );
+}
 
 function ArcadeShell({ wrong, onExit, def }) {
   const lang = useLang();
@@ -1288,9 +1303,15 @@ function ArcadeShell({ wrong, onExit, def }) {
       {phase === "intro" && (
         <div style={styles.resultWrap}>
           <div style={styles.arcadeBadge}>{tr(def.meta.title, lang)}</div>
-          <p style={styles.ratingMsg}>{t.bonusLede} {tr(def.meta.howto, lang)}</p>
+          <p style={styles.ratingMsg}>{t.bonusLede}</p>
+          <div style={styles.howtoCard}>
+            <div style={styles.howtoTitle}>{t.howToPlay}</div>
+            <HowRow label={t.labelGoal} text={tr(def.meta.goal, lang)} color={C.cool} />
+            <HowRow label={t.labelControls} text={controls} color={C.sun} />
+            <HowRow label={t.labelAvoid} text={tr(def.meta.avoid, lang)} color={C.danger} />
+            <HowRow label={t.labelShields} text={t.shieldsRule} color={C.good} />
+          </div>
           <div style={styles.penaltyBox}>{wrong > 0 ? t.penaltyNote(wrong) : t.penaltyNone}</div>
-          <p style={styles.arcadeControls}>{controls}</p>
           <div style={styles.resultBtns}>
             <button style={styles.nextBtn} onClick={() => setPhase("play")}>{t.startGame}</button>
             <button style={styles.chip} onClick={onExit}>{t.backToResults}</button>
@@ -1630,6 +1651,11 @@ const styles = {
   arcadeBadge: { fontFamily: display, fontSize: 26, fontWeight: 400, color: C.sun, marginBottom: 6 },
   penaltyBox: { fontFamily: mono, fontSize: 13, color: C.text, background: "rgba(255,122,107,0.08)", border: "1px solid rgba(255,122,107,0.25)", borderRadius: 10, padding: "10px 14px", margin: "8px 0 4px", maxWidth: 420 },
   arcadeControls: { fontFamily: mono, fontSize: 11.5, color: C.faint, marginTop: 10, textAlign: "center" },
+  howtoCard: { textAlign: "left", background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", margin: "6px 0 10px", maxWidth: 470, width: "100%" },
+  howtoTitle: { fontFamily: mono, fontSize: 11, letterSpacing: 2, color: C.muted, textTransform: "uppercase", marginBottom: 10 },
+  howRow: { display: "flex", gap: 12, padding: "5px 0", alignItems: "baseline" },
+  howLabel: { fontFamily: mono, fontSize: 11, letterSpacing: 1, minWidth: 64, flexShrink: 0, textTransform: "uppercase" },
+  howText: { fontSize: 13.5, color: "#c8d0e4", lineHeight: 1.5 },
   padRow: { display: "flex", gap: 10, justifyContent: "center", marginTop: 12 },
   padBtn: { minWidth: 76, background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 12, padding: "14px 20px", fontSize: 18, cursor: "pointer", userSelect: "none", touchAction: "none" },
   bonusBtn: { background: `linear-gradient(90deg, ${C.sunDeep}, ${C.sun})`, border: "none", color: "#2a1800", borderRadius: 10, padding: "12px 22px", cursor: "pointer", fontSize: 15, fontWeight: 700, marginTop: 20 },
