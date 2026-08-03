@@ -67,13 +67,16 @@ const UI = {
     verify: (label) => `Explored ${label}? See if it stuck.`,
     takeQuiz: (label) => `Take the ${label} quiz →`,
     arcadeTitle: "Asteroid Defense",
-    bonusLede: "You earned a bonus round. Blast the falling asteroids — but every wrong answer left you with fewer shields.",
+    bonusLede: "You earned a bonus round!",
     penaltyNote: (n) => `${n} wrong answer${n === 1 ? "" : "s"} → you start with only ${clamp(3 - n, 1, 3)} shield${clamp(3 - n, 1, 3) === 1 ? "" : "s"}.`,
     penaltyNone: "Perfect quiz — full shields and calmer skies. Enjoy!",
     arcadeControls: "Move: ◀ ▶ · arrow keys · drag  |  Fire: FIRE · space · hold",
     startGame: "▶ Start", fire: "FIRE", gameOver: "Game Over",
     playAgain: "↺ Play again", backToResults: "‹ Back to results",
-    bonusRound: "▶ Bonus round: Asteroid Defense",
+    bonusRound: "▶ Bonus round",
+    controlsShoot: "Move: ◀ ▶ · arrows · drag  |  Fire: FIRE · space",
+    controlsMove: "Move: ◀ ▶ · arrow keys · drag",
+    controlsTap: "Tap the stars in number order",
   },
   ja: {
     eyebrow: "天文学をめぐるインタラクティブな旅",
@@ -108,13 +111,16 @@ const UI = {
     verify: (label) => `${label}を探検した？ 身についたか試そう。`,
     takeQuiz: (label) => `${label}のクイズに挑戦 →`,
     arcadeTitle: "小惑星ディフェンス",
-    bonusLede: "ボーナスゲーム解放！ 降ってくる小惑星を撃ち落とそう——ただし不正解の数だけ、少ないシールドでのスタートです。",
+    bonusLede: "ボーナスゲーム解放！",
     penaltyNote: (n) => `不正解 ${n} 問 → シールド ${clamp(3 - n, 1, 3)} で開始。`,
     penaltyNone: "全問正解——シールド満タン、静かな空。楽しんで！",
     arcadeControls: "移動：◀ ▶ · 矢印キー · ドラッグ  |  発射：FIRE · スペース · 長押し",
     startGame: "▶ スタート", fire: "発射", gameOver: "ゲームオーバー",
     playAgain: "↺ もう一度", backToResults: "‹ 結果に戻る",
-    bonusRound: "▶ ボーナスゲーム：小惑星ディフェンス",
+    bonusRound: "▶ ボーナスゲーム",
+    controlsShoot: "移動：◀ ▶ · 矢印 · ドラッグ  |  発射：FIRE · スペース",
+    controlsMove: "移動：◀ ▶ · 矢印キー · ドラッグ",
+    controlsTap: "星を番号順にタップ",
   },
 };
 
@@ -1044,8 +1050,9 @@ function Row({ k, v }) {
 }
 
 /* ============================================================
-   BONUS ARCADE — Asteroid Defense
+   BONUS ARCADE — a different game per section
    Wrong quiz answers reduce starting shields and raise difficulty.
+   Games share ArcadeShell; each supplies init(g,api) + step(g,ctx,dt,api,over).
    ============================================================ */
 function makeRockVerts() {
   const n = 8 + Math.floor(Math.random() * 4);
@@ -1058,22 +1065,178 @@ function spawnParts(g, x, y, r, color) {
     g.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4 + Math.random() * 0.4, color });
   }
 }
+const makeStars = (W, H, n) => Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 + 0.2 }));
+function lose(g, over) { g.lives -= 1; g.flash = 0.5; if (g.lives <= 0) over(); }
+function drawBg(ctx, g, W, H) {
+  ctx.fillStyle = "#070a14"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  for (const s of g.bg) { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+}
+function drawRock(ctx, r) {
+  ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.spin || 0);
+  const verts = r.verts || (r.verts = makeRockVerts());
+  ctx.beginPath();
+  verts.forEach((vv, i) => { const a = (i / verts.length) * Math.PI * 2; const rr = r.r * vv; const px = Math.cos(a) * rr, py = Math.sin(a) * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+  ctx.closePath(); ctx.fillStyle = "#6b7180"; ctx.fill(); ctx.strokeStyle = "#9aa2b4"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+}
+function drawShip(ctx, x, y) {
+  const glow = ctx.createRadialGradient(x, y, 2, x, y, 26);
+  glow.addColorStop(0, "rgba(99,211,240,0.5)"); glow.addColorStop(1, "rgba(99,211,240,0)");
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(x, y - 16); ctx.lineTo(x - 12, y + 12); ctx.lineTo(x + 12, y + 12); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 4, y + 12); ctx.lineTo(x, y + 18 + Math.random() * 6); ctx.closePath(); ctx.fill();
+}
 
-function Arcade({ wrong, onExit }) {
+/* --- Constellation Connect helpers --- */
+function slSetup(g, api) {
+  const idx = Math.floor(Math.random() * CONSTELLATIONS.length);
+  const con = CONSTELLATIONS[idx];
+  const padX = 70, padY = 60;
+  g.con = con;
+  g.pts = con.stars.map(([x, y]) => [padX + x * (api.W - 2 * padX), padY + y * (api.H - 2 * padY)]);
+  g.order = 0; g.max = Math.max(3.5, 7 / api.diff); g.time = g.max; g.done = false; g.doneT = 0;
+}
+function slLinks(ctx, g, complete) {
+  ctx.strokeStyle = "rgba(99,211,240,0.7)"; ctx.lineWidth = 2;
+  if (complete) {
+    for (const [a, b] of g.con.lines) { ctx.beginPath(); ctx.moveTo(g.pts[a][0], g.pts[a][1]); ctx.lineTo(g.pts[b][0], g.pts[b][1]); ctx.stroke(); }
+  } else {
+    for (let i = 1; i < g.order; i++) { ctx.beginPath(); ctx.moveTo(g.pts[i - 1][0], g.pts[i - 1][1]); ctx.lineTo(g.pts[i][0], g.pts[i][1]); ctx.stroke(); }
+  }
+}
+function slStars(ctx, g, complete) {
+  g.pts.forEach((p, i) => {
+    const tapped = i < g.order || complete, next = !complete && i === g.order;
+    const gr = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], 12);
+    gr.addColorStop(0, tapped ? "#63d3f0" : "#dfe9ff"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1], 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = tapped ? "#63d3f0" : "#ffffff"; ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
+    if (next) { ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 2; const pr = 10 + Math.sin(g.t * 6) * 3; ctx.beginPath(); ctx.arc(p[0], p[1], pr, 0, Math.PI * 2); ctx.stroke(); }
+    if (!tapped) { ctx.fillStyle = "#e9edf7"; ctx.font = `700 11px ${mono}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(i + 1), p[0], p[1]); ctx.textBaseline = "alphabetic"; }
+  });
+}
+
+const GAMES_DEF = {
+  solar: {
+    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, howto: { en: "Shoot the falling asteroids before they reach you.", ja: "降ってくる小惑星を、届く前に撃ち落とそう。" }, pad: "lrf" },
+    init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.cd = 0; g.spawn = 0.5; g.bg = makeStars(api.W, api.H, 60); },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys, diff } = api, spd = 330;
+      if (keys.left) g.shipX -= spd * dt;
+      if (keys.right) g.shipX += spd * dt;
+      if (g.pdown && g.px != null) g.shipX += clamp(g.px - g.shipX, -spd * dt, spd * dt);
+      g.shipX = clamp(g.shipX, 18, W - 18);
+      g.cd -= dt;
+      if ((keys.fire || g.pdown) && g.cd <= 0) { g.bullets.push({ x: g.shipX, y: H - 42 }); g.cd = 0.2; }
+      for (const b of g.bullets) b.y -= 540 * dt;
+      g.bullets = g.bullets.filter((b) => b.y > -12 && !b.dead);
+      g.spawn -= dt; const iv = Math.max(0.32, 0.95 / diff - g.t * 0.008);
+      if (g.spawn <= 0) { const s = 13 + Math.random() * 22; g.rocks.push({ x: s + Math.random() * (W - s * 2), y: -s, r: s, vy: (34 + Math.random() * 26) * diff * (1 + g.t * 0.02), vx: (Math.random() - 0.5) * 26, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 2, verts: makeRockVerts() }); g.spawn = iv; }
+      for (const r of g.rocks) { r.y += r.vy * dt; r.x += r.vx * dt; r.spin += r.vspin * dt; if (r.x < r.r || r.x > W - r.r) r.vx *= -1; }
+      for (const r of g.rocks) { if (r.dead) continue; for (const b of g.bullets) { if (b.dead) continue; if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 3) { b.dead = true; r.dead = true; g.score += Math.round(r.r); spawnParts(g, r.x, r.y, r.r, "#ffcf6b"); break; } } }
+      for (const r of g.rocks) { if (r.dead) continue; if (r.y - r.r > H) { r.dead = true; lose(g, over); } else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); lose(g, over); } }
+      g.rocks = g.rocks.filter((r) => !r.dead); g.bullets = g.bullets.filter((b) => !b.dead);
+      drawBg(ctx, g, W, H);
+      for (const r of g.rocks) drawRock(ctx, r);
+      ctx.strokeStyle = C.cool; ctx.lineWidth = 2.5;
+      for (const b of g.bullets) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y + 10); ctx.stroke(); }
+      drawShip(ctx, g.shipX, H - 30);
+    },
+  },
+  star: {
+    meta: { title: { en: "Star Catcher", ja: "スターキャッチャー" }, howto: { en: "Catch the glowing hydrogen; dodge the dark rocks.", ja: "光る水素をキャッチし、暗い岩を避けよう。" }, pad: "lr" },
+    init: (g, api) => { g.x = api.W / 2; g.items = []; g.spawn = 0.4; g.bg = makeStars(api.W, api.H, 60); },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys, diff } = api, spd = 340, cy = H - 26;
+      if (keys.left) g.x -= spd * dt;
+      if (keys.right) g.x += spd * dt;
+      if (g.pdown && g.px != null) g.x += clamp(g.px - g.x, -spd * dt, spd * dt);
+      g.x = clamp(g.x, 26, W - 26);
+      g.spawn -= dt; const iv = Math.max(0.28, 0.7 / diff - g.t * 0.006);
+      if (g.spawn <= 0) { const bad = Math.random() < 0.32; g.items.push({ x: 22 + Math.random() * (W - 44), y: -14, r: bad ? 12 + Math.random() * 8 : 8, vy: (90 + Math.random() * 60) * diff * (1 + g.t * 0.015), bad, verts: bad ? makeRockVerts() : null }); g.spawn = iv; }
+      for (const it of g.items) it.y += it.vy * dt;
+      for (const it of g.items) {
+        if (it.hit) continue;
+        if (it.y > cy - 12 && it.y < cy + 16 && Math.abs(it.x - g.x) < 30) { it.hit = true; if (it.bad) { spawnParts(g, it.x, it.y, it.r, "#ff7a6b"); lose(g, over); } else { g.score += 5; spawnParts(g, it.x, it.y, it.r, "#ffcf6b"); } }
+        else if (it.y > H + 20) it.hit = true;
+      }
+      g.items = g.items.filter((it) => !it.hit);
+      drawBg(ctx, g, W, H);
+      for (const it of g.items) {
+        if (it.bad) drawRock(ctx, { x: it.x, y: it.y, r: it.r, spin: g.t * 2, verts: it.verts });
+        else { const gr = ctx.createRadialGradient(it.x, it.y, 0, it.x, it.y, it.r * 2); gr.addColorStop(0, "#ffe08a"); gr.addColorStop(1, "rgba(255,207,107,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(it.x, it.y, it.r * 2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#fff4d6"; ctx.beginPath(); ctx.arc(it.x, it.y, it.r, 0, Math.PI * 2); ctx.fill(); }
+      }
+      const glow = ctx.createRadialGradient(g.x, cy, 2, g.x, cy, 26); glow.addColorStop(0, "rgba(99,211,240,0.4)"); glow.addColorStop(1, "rgba(99,211,240,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.x, cy, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = C.cool; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, cy + 4, 22, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    },
+  },
+  sky: {
+    meta: { title: { en: "Constellation Connect", ja: "星座つなぎ" }, howto: { en: "Tap the stars in number order to draw each constellation before the timer runs out.", ja: "時間内に星を番号順にタップして、星座を描こう。" }, pad: "none" },
+    init: (g, api) => { g.bg = makeStars(api.W, api.H, 90); slSetup(g, api); },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, lang } = api;
+      drawBg(ctx, g, W, H);
+      if (g.done) {
+        g.doneT -= dt; slLinks(ctx, g, true); slStars(ctx, g, true);
+        ctx.fillStyle = C.cool; ctx.font = `600 18px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 34);
+        if (g.doneT <= 0) slSetup(g, api);
+        return;
+      }
+      g.time -= dt;
+      if (g.time <= 0) { lose(g, over); g.time = g.max; }
+      if (g.tapped) {
+        const { x, y } = g.tapped; g.tapped = null;
+        let hit = -1, bd = 1e9;
+        g.pts.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - y); if (d < 24 && d < bd) { bd = d; hit = i; } });
+        if (hit === g.order) { g.order++; if (g.order >= g.pts.length) { g.score += Math.round(20 + g.time * 3); g.done = true; g.doneT = 1.2; } }
+        else if (hit >= 0) { lose(g, over); spawnParts(g, g.pts[hit][0], g.pts[hit][1], 7, "#ff7a6b"); }
+      }
+      slLinks(ctx, g, false); slStars(ctx, g, false);
+      ctx.fillStyle = "rgba(120,150,210,0.2)"; ctx.fillRect(14, H - 16, W - 28, 5);
+      ctx.fillStyle = C.sun; ctx.fillRect(14, H - 16, (W - 28) * clamp(g.time / g.max, 0, 1), 5);
+      ctx.fillStyle = C.muted; ctx.font = `500 13px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 30);
+    },
+  },
+  scale: {
+    meta: { title: { en: "Warp Run", ja: "ワープラン" }, howto: { en: "Fly outward and dodge everything. Survive as long as you can.", ja: "宇宙の彼方へ。すべてをかわして、できるだけ長く生き延びよう。" }, pad: "lr" },
+    init: (g, api) => { g.x = api.W / 2; g.obs = []; g.spawn = 0.5; g.bg = Array.from({ length: 80 }, () => ({ x: Math.random() * api.W, y: Math.random() * api.H, len: 4 + Math.random() * 10, sp: 200 + Math.random() * 300 })); },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys, diff } = api, spd = 360, ramp = 1 + g.t * 0.05;
+      if (keys.left) g.x -= spd * dt;
+      if (keys.right) g.x += spd * dt;
+      if (g.pdown && g.px != null) g.x += clamp(g.px - g.x, -spd * dt, spd * dt);
+      g.x = clamp(g.x, 18, W - 18);
+      g.spawn -= dt; const iv = Math.max(0.26, 0.7 / diff - g.t * 0.01);
+      if (g.spawn <= 0) { const s = 12 + Math.random() * 20; g.obs.push({ x: s + Math.random() * (W - 2 * s), y: -s, r: s, vy: (150 + Math.random() * 80) * diff * ramp, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 3, verts: makeRockVerts() }); g.spawn = iv; }
+      for (const o of g.obs) { o.y += o.vy * dt; o.spin += o.vspin * dt; }
+      for (const o of g.obs) { if (o.dead) continue; if (Math.hypot(o.x - g.x, o.y - (H - 30)) < o.r + 11) { o.dead = true; spawnParts(g, o.x, o.y, o.r, "#ff7a6b"); lose(g, over); } else if (o.y - o.r > H) o.dead = true; }
+      g.obs = g.obs.filter((o) => !o.dead);
+      g.score = Math.floor(g.t * 12);
+      ctx.fillStyle = "#050810"; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "rgba(150,180,235,0.5)"; ctx.lineWidth = 1.5;
+      for (const s of g.bg) { s.y += s.sp * ramp * dt; if (s.y > H) { s.y = -s.len; s.x = Math.random() * W; } ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + s.len * ramp); ctx.stroke(); }
+      for (const o of g.obs) drawRock(ctx, o);
+      drawShip(ctx, g.x, H - 30);
+    },
+  },
+};
+
+function ArcadeShell({ wrong, onExit, def }) {
   const lang = useLang();
   const t = UI[lang];
   const [wrapRef, w] = useMeasure();
   const W = Math.min(w, 760), H = 460;
   const canvasRef = useRef(null);
-  const [phase, setPhase] = useState("intro"); // intro | play | over
+  const [phase, setPhase] = useState("intro");
   const [finalScore, setFinalScore] = useState(0);
   const [runId, setRunId] = useState(0);
   const gref = useRef(null);
   const keys = useRef({ left: false, right: false, fire: false });
   const playingRef = useRef(false);
-
   const startLives = clamp(3 - wrong, 1, 3);
   const diff = 1 + wrong * 0.18;
+  const pad = def.meta.pad;
 
   useEffect(() => { playingRef.current = phase === "play"; }, [phase]);
 
@@ -1081,19 +1244,9 @@ function Arcade({ wrong, onExit }) {
     const isL = (k) => k === "ArrowLeft" || k === "a" || k === "A";
     const isR = (k) => k === "ArrowRight" || k === "d" || k === "D";
     const isF = (e) => e.key === " " || e.code === "Space";
-    const kd = (e) => {
-      if (!playingRef.current) return;
-      if (isL(e.key)) { keys.current.left = true; e.preventDefault(); }
-      if (isR(e.key)) { keys.current.right = true; e.preventDefault(); }
-      if (isF(e)) { keys.current.fire = true; e.preventDefault(); }
-    };
-    const ku = (e) => {
-      if (isL(e.key)) keys.current.left = false;
-      if (isR(e.key)) keys.current.right = false;
-      if (isF(e)) keys.current.fire = false;
-    };
-    window.addEventListener("keydown", kd);
-    window.addEventListener("keyup", ku);
+    const kd = (e) => { if (!playingRef.current) return; if (isL(e.key)) { keys.current.left = true; e.preventDefault(); } if (isR(e.key)) { keys.current.right = true; e.preventDefault(); } if (isF(e)) { keys.current.fire = true; e.preventDefault(); } };
+    const ku = (e) => { if (isL(e.key)) keys.current.left = false; if (isR(e.key)) keys.current.right = false; if (isF(e)) keys.current.fire = false; };
+    window.addEventListener("keydown", kd); window.addEventListener("keyup", ku);
     return () => { window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); };
   }, []);
 
@@ -1102,126 +1255,62 @@ function Arcade({ wrong, onExit }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = setupCanvas(canvas, W, H);
-    const bg = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 + 0.2 }));
-    const g = { shipX: W / 2, targetX: null, pfire: false, bullets: [], rocks: [], parts: [], lives: startLives, score: 0, cd: 0, spawn: 0.5, tsurv: 0, flash: 0, over: false, bg };
+    const api = { W, H, startLives, diff, keys: keys.current, lang };
+    const g = { score: 0, lives: startLives, flash: 0, over: false, parts: [], t: 0, px: null, py: null, pdown: false, tapped: null };
     gref.current = g;
-
-    const loseLife = () => {
-      g.lives -= 1; g.flash = 0.5;
-      if (g.lives <= 0) { g.over = true; setFinalScore(g.score); setPhase("over"); }
-    };
-
+    def.init(g, api);
+    const over = () => { g.over = true; setFinalScore(g.score); setPhase("over"); };
     let raf, last = performance.now();
-    const loop = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      g.tsurv += dt;
-      const spd = 330;
-      if (keys.current.left) g.shipX -= spd * dt;
-      if (keys.current.right) g.shipX += spd * dt;
-      if (g.pfire && g.targetX != null) g.shipX += clamp(g.targetX - g.shipX, -spd * dt, spd * dt);
-      g.shipX = clamp(g.shipX, 18, W - 18);
-
-      g.cd -= dt;
-      if ((keys.current.fire || g.pfire) && g.cd <= 0) { g.bullets.push({ x: g.shipX, y: H - 42 }); g.cd = 0.2; }
-      for (const b of g.bullets) b.y -= 540 * dt;
-      g.bullets = g.bullets.filter((b) => b.y > -12 && !b.dead);
-
-      g.spawn -= dt;
-      const interval = Math.max(0.32, 0.95 / diff - g.tsurv * 0.008);
-      if (g.spawn <= 0) {
-        const size = 13 + Math.random() * 22;
-        g.rocks.push({ x: size + Math.random() * (W - size * 2), y: -size, r: size, vy: (34 + Math.random() * 26) * diff * (1 + g.tsurv * 0.02), vx: (Math.random() - 0.5) * 26, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 2, verts: makeRockVerts() });
-        g.spawn = interval;
-      }
-      for (const r of g.rocks) { r.y += r.vy * dt; r.x += r.vx * dt; r.spin += r.vspin * dt; if (r.x < r.r || r.x > W - r.r) r.vx *= -1; }
-
-      for (const r of g.rocks) {
-        if (r.dead) continue;
-        for (const b of g.bullets) {
-          if (b.dead) continue;
-          if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 3) { b.dead = true; r.dead = true; g.score += Math.round(r.r); spawnParts(g, r.x, r.y, r.r, "#ffcf6b"); break; }
-        }
-      }
-      for (const r of g.rocks) {
-        if (r.dead) continue;
-        if (r.y - r.r > H) { r.dead = true; loseLife(); }
-        else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); loseLife(); }
-      }
-      g.rocks = g.rocks.filter((r) => !r.dead);
-      g.bullets = g.bullets.filter((b) => !b.dead);
+    const frame = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; g.t += dt;
+      def.step(g, ctx, dt, api, over);
       for (const p of g.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
       g.parts = g.parts.filter((p) => p.life > 0);
-      if (g.flash > 0) g.flash -= dt;
-
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#070a14"; ctx.fillRect(0, 0, W, H);
-      for (const s of g.bg) { ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
-      for (const r of g.rocks) {
-        ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.spin);
-        ctx.beginPath();
-        r.verts.forEach((vv, i) => { const a = (i / r.verts.length) * Math.PI * 2; const rr = r.r * vv; const px = Math.cos(a) * rr, py = Math.sin(a) * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-        ctx.closePath();
-        ctx.fillStyle = "#6b7180"; ctx.fill();
-        ctx.strokeStyle = "#9aa2b4"; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.restore();
-      }
-      ctx.strokeStyle = C.cool; ctx.lineWidth = 2.5;
-      for (const b of g.bullets) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y + 10); ctx.stroke(); }
       for (const p of g.parts) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalAlpha = 1;
-      const sx = g.shipX, sy = H - 30;
-      const glow = ctx.createRadialGradient(sx, sy, 2, sx, sy, 26);
-      glow.addColorStop(0, "rgba(99,211,240,0.5)"); glow.addColorStop(1, "rgba(99,211,240,0)");
-      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 16); ctx.lineTo(sx - 12, sy + 12); ctx.lineTo(sx + 12, sy + 12); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = C.sun; ctx.beginPath(); ctx.moveTo(sx - 4, sy + 12); ctx.lineTo(sx + 4, sy + 12); ctx.lineTo(sx, sy + 18 + Math.random() * 6); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = C.text; ctx.font = `700 15px ${mono}`; ctx.textAlign = "left";
-      ctx.fillText(`${t.score} ${g.score}`, 14, 24);
-      for (let i = 0; i < g.lives; i++) {
-        const hx = W - 16 - i * 20, hy = 18;
-        ctx.fillStyle = C.cool; ctx.beginPath(); ctx.moveTo(hx, hy - 7); ctx.lineTo(hx - 6, hy + 6); ctx.lineTo(hx + 6, hy + 6); ctx.closePath(); ctx.fill();
-      }
-      if (g.flash > 0) { ctx.fillStyle = `rgba(255,80,70,${g.flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
-
-      if (!g.over) raf = requestAnimationFrame(loop);
+      ctx.fillStyle = C.text; ctx.font = `700 15px ${mono}`; ctx.textAlign = "left"; ctx.fillText(`${t.score} ${g.score}`, 14, 24);
+      for (let i = 0; i < g.lives; i++) { const hx = W - 16 - i * 20, hy = 18; ctx.fillStyle = C.cool; ctx.beginPath(); ctx.moveTo(hx, hy - 7); ctx.lineTo(hx - 6, hy + 6); ctx.lineTo(hx + 6, hy + 6); ctx.closePath(); ctx.fill(); }
+      if (g.flash > 0) { g.flash -= dt; ctx.fillStyle = `rgba(255,80,70,${g.flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
+      if (!g.over) raf = requestAnimationFrame(frame);
     };
-    raf = requestAnimationFrame(loop);
+    raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [phase, runId, W]);
 
-  const pdown = (ev) => { const g = gref.current; if (!g) return; const rect = canvasRef.current.getBoundingClientRect(); g.targetX = ev.clientX - rect.left; g.pfire = true; canvasRef.current.setPointerCapture?.(ev.pointerId); };
-  const pmove = (ev) => { const g = gref.current; if (!g || !g.pfire) return; const rect = canvasRef.current.getBoundingClientRect(); g.targetX = ev.clientX - rect.left; };
-  const pup = () => { const g = gref.current; if (g) g.pfire = false; };
+  const pdown = (ev) => { const g = gref.current; if (!g) return; const r = canvasRef.current.getBoundingClientRect(); g.px = ev.clientX - r.left; g.py = ev.clientY - r.top; g.pdown = true; g.tapped = { x: g.px, y: g.py }; canvasRef.current.setPointerCapture?.(ev.pointerId); };
+  const pmove = (ev) => { const g = gref.current; if (!g || !g.pdown) return; const r = canvasRef.current.getBoundingClientRect(); g.px = ev.clientX - r.left; g.py = ev.clientY - r.top; };
+  const pup = () => { const g = gref.current; if (g) g.pdown = false; };
   const hold = (k, v) => () => { keys.current[k] = v; };
+  const controls = pad === "lrf" ? t.controlsShoot : pad === "none" ? t.controlsTap : t.controlsMove;
 
   return (
     <div ref={wrapRef}>
       {phase === "intro" && (
         <div style={styles.resultWrap}>
-          <div style={styles.arcadeBadge}>{t.arcadeTitle}</div>
-          <p style={styles.ratingMsg}>{t.bonusLede}</p>
+          <div style={styles.arcadeBadge}>{tr(def.meta.title, lang)}</div>
+          <p style={styles.ratingMsg}>{t.bonusLede} {tr(def.meta.howto, lang)}</p>
           <div style={styles.penaltyBox}>{wrong > 0 ? t.penaltyNote(wrong) : t.penaltyNone}</div>
-          <p style={styles.arcadeControls}>{t.arcadeControls}</p>
+          <p style={styles.arcadeControls}>{controls}</p>
           <div style={styles.resultBtns}>
             <button style={styles.nextBtn} onClick={() => setPhase("play")}>{t.startGame}</button>
             <button style={styles.chip} onClick={onExit}>{t.backToResults}</button>
           </div>
         </div>
       )}
-
       {phase === "play" && (
         <div>
           <canvas ref={canvasRef} onPointerDown={pdown} onPointerMove={pmove} onPointerUp={pup} onPointerLeave={pup}
-            style={{ display: "block", margin: "0 auto", borderRadius: 12, touchAction: "none", cursor: "crosshair", maxWidth: "100%" }} />
-          <div style={styles.padRow}>
-            <button style={styles.padBtn} onPointerDown={hold("left", true)} onPointerUp={hold("left", false)} onPointerLeave={hold("left", false)}>◀</button>
-            <button style={styles.padBtn} onPointerDown={hold("fire", true)} onPointerUp={hold("fire", false)} onPointerLeave={hold("fire", false)}>{t.fire}</button>
-            <button style={styles.padBtn} onPointerDown={hold("right", true)} onPointerUp={hold("right", false)} onPointerLeave={hold("right", false)}>▶</button>
-          </div>
-          <p style={styles.arcadeControls}>{t.arcadeControls}</p>
+            style={{ display: "block", margin: "0 auto", borderRadius: 12, touchAction: "none", cursor: pad === "none" ? "pointer" : "crosshair", maxWidth: "100%" }} />
+          {pad !== "none" && (
+            <div style={styles.padRow}>
+              <button style={styles.padBtn} onPointerDown={hold("left", true)} onPointerUp={hold("left", false)} onPointerLeave={hold("left", false)}>◀</button>
+              {pad === "lrf" && <button style={styles.padBtn} onPointerDown={hold("fire", true)} onPointerUp={hold("fire", false)} onPointerLeave={hold("fire", false)}>{t.fire}</button>}
+              <button style={styles.padBtn} onPointerDown={hold("right", true)} onPointerUp={hold("right", false)} onPointerLeave={hold("right", false)}>▶</button>
+            </div>
+          )}
+          <p style={styles.arcadeControls}>{controls}</p>
         </div>
       )}
-
       {phase === "over" && (
         <div style={styles.resultWrap}>
           <div style={styles.arcadeBadge}>{t.gameOver}</div>
@@ -1238,6 +1327,12 @@ function Arcade({ wrong, onExit }) {
     </div>
   );
 }
+
+function BonusGame({ topic, wrong, onExit }) {
+  const id = useMemo(() => (topic === "grand" ? ["solar", "star", "sky", "scale"][Math.floor(Math.random() * 4)] : topic), [topic]);
+  return <ArcadeShell wrong={wrong} onExit={onExit} def={GAMES_DEF[id]} />;
+}
+
 
 /* ============================================================
    KNOWLEDGE CHECK — quizzes
@@ -1285,7 +1380,7 @@ function Quiz({ initialTopic }) {
     const total = run.length;
     const pct = score / total;
     const r = quizRating(pct);
-    if (arcade) return <Arcade wrong={total - score} onExit={() => setArcade(false)} />;
+    if (arcade) return <BonusGame topic={topic} wrong={total - score} onExit={() => setArcade(false)} />;
     return (
       <div style={styles.resultWrap}>
         <div style={styles.resultRing}>
