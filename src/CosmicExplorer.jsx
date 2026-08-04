@@ -11,7 +11,7 @@ import React, { useState, useRef, useEffect, useMemo, useContext } from "react";
 const C = {
   void: "#05060d", deep: "#0a0e1c", panel: "rgba(15,21,40,0.72)",
   border: "rgba(120,150,210,0.16)", borderBright: "rgba(140,175,235,0.35)",
-  text: "#e9edf7", muted: "#8b96b0", faint: "#5a6480",
+  text: "#e9edf7", muted: "#aeb7d2", faint: "#8b96b8",
   sun: "#ffcf6b", sunDeep: "#f5a742", cool: "#63d3f0", violet: "#b58cf0",
   danger: "#ff7a6b", good: "#5fd39a",
 };
@@ -530,7 +530,7 @@ function SolarSystem() {
         ctx.fillStyle = p.color;
         ctx.beginPath(); ctx.arc(x, y, p.r, 0, Math.PI * 2); ctx.fill();
         if (sel) {
-          ctx.fillStyle = C.text; ctx.font = `500 12px ${ui}`; ctx.textAlign = "center";
+          ctx.fillStyle = C.text; ctx.font = `500 14px ${ui}`; ctx.textAlign = "center";
           ctx.fillText(tr(p.name, lang), x, y - p.r - 12);
         }
       });
@@ -816,8 +816,8 @@ function StarForge() {
       <InfoPanel>
         <h3 style={styles.panelTitle}>{t.birthMass}</h3>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-          <span style={{ fontFamily: mono, fontSize: 30, color: C.sun }}>{mass.toFixed(mass < 1 ? 2 : 1)}</span>
-          <span style={{ color: C.muted, fontSize: 13 }}>{t.timesSun}</span>
+          <span style={{ fontFamily: mono, fontSize: 31, color: C.sun }}>{mass.toFixed(mass < 1 ? 2 : 1)}</span>
+          <span style={{ color: C.muted, fontSize: 15 }}>{t.timesSun}</span>
         </div>
         <input type="range" min={0.05} max={50} step={0.05} value={mass}
           onChange={(e) => { setMass(parseFloat(e.target.value)); reset(); }} style={styles.range} />
@@ -897,7 +897,7 @@ function NightSky() {
       const cyL = pts.reduce((a, p) => a + p[1], 0) / pts.length;
       if (showLines || sel) {
         ctx.fillStyle = sel ? C.cool : "rgba(200,210,235,0.55)";
-        ctx.font = `${sel ? 600 : 400} 13px ${ui}`; ctx.textAlign = "center";
+        ctx.font = `${sel ? 600 : 400} 15px ${ui}`; ctx.textAlign = "center";
         ctx.fillText(tr(con.name, lang), cxL, cyL + con.scale * H * 0.62);
       }
       hits.push({ ci, x: cxL, y: cyL, r: con.scale * Math.max(cw, H) * 0.5 });
@@ -1118,7 +1118,7 @@ function slStars(ctx, g, complete) {
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1], 12, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = tapped ? "#63d3f0" : "#ffffff"; ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
     if (next) { ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 2; const pr = 10 + Math.sin(g.t * 6) * 3; ctx.beginPath(); ctx.arc(p[0], p[1], pr, 0, Math.PI * 2); ctx.stroke(); }
-    if (!tapped) { ctx.fillStyle = "#e9edf7"; ctx.font = `700 11px ${mono}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(i + 1), p[0], p[1]); ctx.textBaseline = "alphabetic"; }
+    if (!tapped) { ctx.fillStyle = "#e9edf7"; ctx.font = `700 13px ${mono}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(i + 1), p[0], p[1]); ctx.textBaseline = "alphabetic"; }
   });
 }
 
@@ -1185,7 +1185,7 @@ const GAMES_DEF = {
       drawBg(ctx, g, W, H);
       if (g.done) {
         g.doneT -= dt; slLinks(ctx, g, true); slStars(ctx, g, true);
-        ctx.fillStyle = C.cool; ctx.font = `600 18px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 34);
+        ctx.fillStyle = C.cool; ctx.font = `600 19px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 34);
         if (g.doneT <= 0) slSetup(g, api);
         return;
       }
@@ -1201,7 +1201,7 @@ const GAMES_DEF = {
       slLinks(ctx, g, false); slStars(ctx, g, false);
       ctx.fillStyle = "rgba(120,150,210,0.2)"; ctx.fillRect(14, H - 16, W - 28, 5);
       ctx.fillStyle = C.sun; ctx.fillRect(14, H - 16, (W - 28) * clamp(g.time / g.max, 0, 1), 5);
-      ctx.fillStyle = C.muted; ctx.font = `500 13px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 30);
+      ctx.fillStyle = C.muted; ctx.font = `500 15px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 30);
     },
   },
   scale: {
@@ -1283,7 +1283,7 @@ function ArcadeShell({ wrong, onExit, def }) {
       g.parts = g.parts.filter((p) => p.life > 0);
       for (const p of g.parts) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalAlpha = 1;
-      ctx.fillStyle = C.text; ctx.font = `700 15px ${mono}`; ctx.textAlign = "left"; ctx.fillText(`${t.score} ${g.score}`, 14, 24);
+      ctx.fillStyle = C.text; ctx.font = `700 16px ${mono}`; ctx.textAlign = "left"; ctx.fillText(`${t.score} ${g.score}`, 14, 24);
       for (let i = 0; i < g.lives; i++) { const hx = W - 16 - i * 20, hy = 18; ctx.fillStyle = C.cool; ctx.beginPath(); ctx.moveTo(hx, hy - 7); ctx.lineTo(hx - 6, hy + 6); ctx.lineTo(hx + 6, hy + 6); ctx.closePath(); ctx.fill(); }
       if (g.flash > 0) { g.flash -= dt; ctx.fillStyle = `rgba(255,80,70,${g.flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
       if (!g.over) raf = requestAnimationFrame(frame);
@@ -1566,97 +1566,97 @@ const styles = {
   content: { position: "relative", zIndex: 1, maxWidth: 1080, margin: "0 auto", padding: "24px 22px 60px" },
   langBar: { display: "flex", justifyContent: "flex-end", gap: 6, marginBottom: 14 },
   header: { textAlign: "center", marginBottom: 30 },
-  eyebrow: { fontFamily: mono, fontSize: 11, letterSpacing: 3, color: C.cool, marginBottom: 14 },
+  eyebrow: { fontFamily: mono, fontSize: 13, letterSpacing: 3, color: C.cool, marginBottom: 14 },
   title: { fontFamily: display, fontWeight: 300, fontSize: "clamp(38px, 7vw, 64px)", margin: 0, letterSpacing: -0.5, lineHeight: 1 },
-  tagline: { color: C.muted, maxWidth: 560, margin: "16px auto 0", fontSize: 15, lineHeight: 1.6 },
+  tagline: { color: C.muted, maxWidth: 560, margin: "16px auto 0", fontSize: 17, lineHeight: 1.6 },
   nav: { display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 26 },
   tab: { display: "flex", flexDirection: "column", alignItems: "flex-start", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 18px", cursor: "pointer", color: C.text, backdropFilter: "blur(6px)", transition: "all 0.15s", textAlign: "left" },
   tabOn: { borderColor: C.borderBright, background: "rgba(30,40,70,0.85)", boxShadow: `0 0 24px rgba(99,211,240,0.12)` },
-  tabLabel: { fontFamily: display, fontSize: 17 },
-  tabSub: { fontFamily: mono, fontSize: 10.5, color: C.faint, letterSpacing: 0.5, marginTop: 2 },
+  tabLabel: { fontFamily: display, fontSize: 19 },
+  tabSub: { fontFamily: mono, fontSize: 12.5, color: C.faint, letterSpacing: 0.5, marginTop: 2 },
   stage: { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 18, padding: 22, backdropFilter: "blur(10px)", minHeight: 480 },
   realmGrid: { display: "flex", flexWrap: "wrap", gap: 22, alignItems: "flex-start" },
   panel: { flex: "1 1 250px", minWidth: 240, background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, alignSelf: "stretch" },
-  panelTitle: { fontFamily: display, fontWeight: 400, fontSize: 24, margin: "2px 0 0" },
-  panelKind: { fontSize: 13, color: C.muted, marginTop: 2 },
+  panelTitle: { fontFamily: display, fontWeight: 400, fontSize: 25, margin: "2px 0 0" },
+  panelKind: { fontSize: 15, color: C.muted, marginTop: 2 },
   swatch: { width: 30, height: 30, borderRadius: "50%", flexShrink: 0, boxShadow: "inset -4px -4px 8px rgba(0,0,0,0.4)" },
   dl: { margin: "18px 0 0", padding: 0 },
   row: { display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: `1px solid rgba(120,150,210,0.1)` },
-  dt: { color: C.muted, fontSize: 13, margin: 0 },
-  dd: { margin: 0, fontFamily: mono, fontSize: 13, textAlign: "right", color: C.text },
-  factText: { fontSize: 14.5, lineHeight: 1.6, color: "#c8d0e4", fontFamily: display, fontStyle: "italic" },
-  hint: { fontSize: 12.5, color: C.faint, marginTop: 14 },
-  note: { fontSize: 12.5, color: C.muted, marginTop: 12, lineHeight: 1.5, maxWidth: 460 },
+  dt: { color: C.muted, fontSize: 15, margin: 0 },
+  dd: { margin: 0, fontFamily: mono, fontSize: 15, textAlign: "right", color: C.text },
+  factText: { fontSize: 16.5, lineHeight: 1.6, color: "#c8d0e4", fontFamily: display, fontStyle: "italic" },
+  hint: { fontSize: 14.5, color: C.faint, marginTop: 14 },
+  note: { fontSize: 14.5, color: C.muted, marginTop: 12, lineHeight: 1.5, maxWidth: 460 },
   controlBar: { display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 16 },
-  iconBtn: { background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 9, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontWeight: 500 },
+  iconBtn: { background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 9, padding: "8px 14px", cursor: "pointer", fontSize: 15, fontWeight: 500 },
   speedRow: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" },
   pickerRow: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14, justifyContent: "center" },
-  tinyLabel: { fontSize: 11, color: C.faint, fontFamily: mono, marginRight: 2 },
-  chip: { background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 20, padding: "5px 11px", cursor: "pointer", fontSize: 12 },
+  tinyLabel: { fontSize: 13, color: C.faint, fontFamily: mono, marginRight: 2 },
+  chip: { background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 20, padding: "5px 11px", cursor: "pointer", fontSize: 14 },
   chipOn: { background: "rgba(99,211,240,0.14)", borderColor: C.cool, color: C.text },
-  readout: { display: "flex", gap: 10, marginTop: 12, fontFamily: mono, fontSize: 12.5, color: C.cool },
+  readout: { display: "flex", gap: 10, marginTop: 12, fontFamily: mono, fontSize: 14.5, color: C.cool },
   range: { width: "100%", marginTop: 18 },
-  rangeEnds: { display: "flex", justifyContent: "space-between", fontFamily: mono, fontSize: 11, color: C.faint, marginTop: 4 },
+  rangeEnds: { display: "flex", justifyContent: "space-between", fontFamily: mono, fontSize: 13, color: C.faint, marginTop: 4 },
   fateBox: { marginTop: 18, padding: 14, background: "rgba(255,122,107,0.06)", border: "1px solid rgba(255,122,107,0.22)", borderRadius: 10 },
-  fateLabel: { fontFamily: mono, fontSize: 10, letterSpacing: 2, color: C.danger, marginBottom: 8 },
+  fateLabel: { fontFamily: mono, fontSize: 12, letterSpacing: 2, color: C.danger, marginBottom: 8 },
   legendWrap: { marginTop: 18 },
   legendBar: { height: 10, borderRadius: 6, background: "linear-gradient(90deg, #a8c4ff, #eaf0ff, #ffe08a, #ffab5e, #ff6f43)" },
-  legendEnds: { display: "flex", justifyContent: "space-between", fontFamily: mono, fontSize: 10.5, color: C.muted, marginTop: 5 },
+  legendEnds: { display: "flex", justifyContent: "space-between", fontFamily: mono, fontSize: 12.5, color: C.muted, marginTop: 5 },
   pathBox: { marginTop: 18, padding: 14, background: "rgba(99,211,240,0.06)", border: `1px solid ${C.border}`, borderRadius: 10 },
-  pathText: { fontFamily: mono, fontSize: 12.5, lineHeight: 1.7, color: C.text, margin: 0 },
-  keyTermText: { fontSize: 13.5, lineHeight: 1.6, color: "#c8d0e4", margin: 0 },
-  stagePill: { fontFamily: mono, fontSize: 12, color: C.cool, border: `1px solid ${C.border}`, borderRadius: 20, padding: "5px 12px" },
-  stageDesc: { fontSize: 14.5, lineHeight: 1.6, color: "#c8d0e4", marginTop: 12, fontFamily: display, fontStyle: "italic", maxWidth: 460 },
-  stepCounter: { fontFamily: mono, fontSize: 12, color: C.faint, letterSpacing: 1, marginBottom: 6 },
+  pathText: { fontFamily: mono, fontSize: 14.5, lineHeight: 1.7, color: C.text, margin: 0 },
+  keyTermText: { fontSize: 15.5, lineHeight: 1.6, color: "#c8d0e4", margin: 0 },
+  stagePill: { fontFamily: mono, fontSize: 14, color: C.cool, border: `1px solid ${C.border}`, borderRadius: 20, padding: "5px 12px" },
+  stageDesc: { fontSize: 16.5, lineHeight: 1.6, color: "#c8d0e4", marginTop: 12, fontFamily: display, fontStyle: "italic", maxWidth: 460 },
+  stepCounter: { fontFamily: mono, fontSize: 14, color: C.faint, letterSpacing: 1, marginBottom: 6 },
   ladder: { display: "flex", alignItems: "center", gap: 5, flex: 1, justifyContent: "center", minWidth: 120 },
   rung: { width: 8, borderRadius: 4, cursor: "pointer", transition: "all 0.2s" },
-  footer: { textAlign: "center", marginTop: 26, fontSize: 11.5, color: C.faint, fontFamily: mono },
+  footer: { textAlign: "center", marginTop: 26, fontSize: 13.5, color: C.faint, fontFamily: mono },
   verifyCta: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "center", marginTop: 18, padding: "14px 18px", background: "rgba(99,211,240,0.06)", border: `1px solid ${C.border}`, borderRadius: 12 },
-  verifyText: { color: C.muted, fontSize: 13.5 },
-  verifyBtn: { background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 9, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 500 },
+  verifyText: { color: C.muted, fontSize: 15.5 },
+  verifyBtn: { background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 9, padding: "8px 16px", cursor: "pointer", fontSize: 15, fontWeight: 500 },
   quizIntro: { textAlign: "center", marginBottom: 22 },
-  quizH2: { fontFamily: display, fontWeight: 300, fontSize: 30, margin: 0 },
-  quizLede: { color: C.muted, maxWidth: 480, margin: "10px auto 0", fontSize: 14, lineHeight: 1.6 },
+  quizH2: { fontFamily: display, fontWeight: 300, fontSize: 31, margin: 0 },
+  quizLede: { color: C.muted, maxWidth: 480, margin: "10px auto 0", fontSize: 16, lineHeight: 1.6 },
   topicGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 },
   topicCard: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, textAlign: "left", background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, cursor: "pointer", color: C.text, transition: "all 0.15s", minHeight: 128 },
-  topicLabel: { fontFamily: display, fontSize: 19 },
-  topicBlurb: { color: C.muted, fontSize: 13, lineHeight: 1.5, flex: 1 },
-  topicGo: { fontFamily: mono, fontSize: 12, color: C.cool, marginTop: 6 },
+  topicLabel: { fontFamily: display, fontSize: 21 },
+  topicBlurb: { color: C.muted, fontSize: 15, lineHeight: 1.5, flex: 1 },
+  topicGo: { fontFamily: mono, fontSize: 14, color: C.cool, marginTop: 6 },
   quizTop: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, gap: 12 },
-  quizCount: { fontFamily: mono, fontSize: 12.5, color: C.faint, letterSpacing: 1 },
-  quizScore: { fontFamily: mono, fontSize: 13, color: C.text },
+  quizCount: { fontFamily: mono, fontSize: 14.5, color: C.faint, letterSpacing: 1 },
+  quizScore: { fontFamily: mono, fontSize: 15, color: C.text },
   streak: { color: C.sun, fontStyle: "normal" },
   progressTrack: { height: 4, background: "rgba(120,150,210,0.2)", borderRadius: 4, overflow: "hidden", marginBottom: 22 },
   progressFill: { height: "100%", background: `linear-gradient(90deg, ${C.cool}, ${C.sun})`, borderRadius: 4, transition: "width 0.3s ease" },
-  qText: { fontFamily: display, fontWeight: 400, fontSize: 22, lineHeight: 1.35, margin: "0 0 20px", maxWidth: 620 },
+  qText: { fontFamily: display, fontWeight: 400, fontSize: 23, lineHeight: 1.35, margin: "0 0 20px", maxWidth: 620 },
   optCol: { display: "flex", flexDirection: "column", gap: 10, maxWidth: 620 },
-  opt: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: "rgba(15,21,40,0.7)", border: `1px solid ${C.border}`, color: C.text, borderRadius: 11, padding: "13px 15px", cursor: "pointer", fontSize: 14.5, transition: "all 0.12s", width: "100%" },
-  optMark: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", border: `1px solid ${C.border}`, fontFamily: mono, fontSize: 12.5, flexShrink: 0 },
+  opt: { display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: "rgba(15,21,40,0.7)", border: `1px solid ${C.border}`, color: C.text, borderRadius: 11, padding: "13px 15px", cursor: "pointer", fontSize: 16.5, transition: "all 0.12s", width: "100%" },
+  optMark: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", border: `1px solid ${C.border}`, fontFamily: mono, fontSize: 14.5, flexShrink: 0 },
   optCorrect: { borderColor: C.good, background: "rgba(95,211,154,0.14)" },
   optWrong: { borderColor: C.danger, background: "rgba(255,122,107,0.12)" },
   optDim: { opacity: 0.5 },
   explainBox: { marginTop: 18, padding: 16, background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 12, maxWidth: 620 },
-  explainTag: { fontFamily: mono, fontSize: 11, letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" },
-  explainText: { fontSize: 14.5, lineHeight: 1.6, color: "#c8d0e4", margin: "0 0 14px", fontFamily: display, fontStyle: "italic" },
-  nextBtn: { background: C.cool, border: "none", color: "#062430", borderRadius: 9, padding: "10px 18px", cursor: "pointer", fontSize: 14, fontWeight: 600 },
+  explainTag: { fontFamily: mono, fontSize: 13, letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" },
+  explainText: { fontSize: 16.5, lineHeight: 1.6, color: "#c8d0e4", margin: "0 0 14px", fontFamily: display, fontStyle: "italic" },
+  nextBtn: { background: C.cool, border: "none", color: "#062430", borderRadius: 9, padding: "10px 18px", cursor: "pointer", fontSize: 16, fontWeight: 600 },
   resultWrap: { textAlign: "center", padding: "20px 0 10px", display: "flex", flexDirection: "column", alignItems: "center" },
   resultRing: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 150, height: 150, borderRadius: "50%", border: `2px solid ${C.borderBright}`, marginBottom: 18, background: "radial-gradient(circle, rgba(99,211,240,0.1), transparent)" },
-  resultScore: { fontFamily: display, fontSize: 44, lineHeight: 1, color: C.text },
-  resultOf: { fontSize: 22, color: C.faint },
-  resultPct: { fontFamily: mono, fontSize: 13, color: C.cool, marginTop: 6 },
-  ratingTitle: { fontFamily: display, fontSize: 26, fontWeight: 400, color: C.sun },
-  ratingMsg: { color: C.muted, maxWidth: 420, margin: "8px auto 0", fontSize: 14, lineHeight: 1.6 },
-  bestStreak: { fontFamily: mono, fontSize: 12, color: C.faint, marginTop: 12 },
+  resultScore: { fontFamily: display, fontSize: 45, lineHeight: 1, color: C.text },
+  resultOf: { fontSize: 23, color: C.faint },
+  resultPct: { fontFamily: mono, fontSize: 15, color: C.cool, marginTop: 6 },
+  ratingTitle: { fontFamily: display, fontSize: 27, fontWeight: 400, color: C.sun },
+  ratingMsg: { color: C.muted, maxWidth: 420, margin: "8px auto 0", fontSize: 16, lineHeight: 1.6 },
+  bestStreak: { fontFamily: mono, fontSize: 14, color: C.faint, marginTop: 12 },
   resultBtns: { display: "flex", gap: 12, marginTop: 22, flexWrap: "wrap", justifyContent: "center" },
-  arcadeBadge: { fontFamily: display, fontSize: 26, fontWeight: 400, color: C.sun, marginBottom: 6 },
-  penaltyBox: { fontFamily: mono, fontSize: 13, color: C.text, background: "rgba(255,122,107,0.08)", border: "1px solid rgba(255,122,107,0.25)", borderRadius: 10, padding: "10px 14px", margin: "8px 0 4px", maxWidth: 420 },
-  arcadeControls: { fontFamily: mono, fontSize: 11.5, color: C.faint, marginTop: 10, textAlign: "center" },
+  arcadeBadge: { fontFamily: display, fontSize: 27, fontWeight: 400, color: C.sun, marginBottom: 6 },
+  penaltyBox: { fontFamily: mono, fontSize: 15, color: C.text, background: "rgba(255,122,107,0.08)", border: "1px solid rgba(255,122,107,0.25)", borderRadius: 10, padding: "10px 14px", margin: "8px 0 4px", maxWidth: 420 },
+  arcadeControls: { fontFamily: mono, fontSize: 13.5, color: C.faint, marginTop: 10, textAlign: "center" },
   howtoCard: { textAlign: "left", background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", margin: "6px 0 10px", maxWidth: 470, width: "100%" },
-  howtoTitle: { fontFamily: mono, fontSize: 11, letterSpacing: 2, color: C.muted, textTransform: "uppercase", marginBottom: 10 },
+  howtoTitle: { fontFamily: mono, fontSize: 13, letterSpacing: 2, color: C.muted, textTransform: "uppercase", marginBottom: 10 },
   howRow: { display: "flex", gap: 12, padding: "5px 0", alignItems: "baseline" },
-  howLabel: { fontFamily: mono, fontSize: 11, letterSpacing: 1, minWidth: 64, flexShrink: 0, textTransform: "uppercase" },
-  howText: { fontSize: 13.5, color: "#c8d0e4", lineHeight: 1.5 },
+  howLabel: { fontFamily: mono, fontSize: 13, letterSpacing: 1, minWidth: 64, flexShrink: 0, textTransform: "uppercase" },
+  howText: { fontSize: 15.5, color: "#c8d0e4", lineHeight: 1.5 },
   padRow: { display: "flex", gap: 10, justifyContent: "center", marginTop: 12 },
-  padBtn: { minWidth: 76, background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 12, padding: "14px 20px", fontSize: 18, cursor: "pointer", userSelect: "none", touchAction: "none" },
-  bonusBtn: { background: `linear-gradient(90deg, ${C.sunDeep}, ${C.sun})`, border: "none", color: "#2a1800", borderRadius: 10, padding: "12px 22px", cursor: "pointer", fontSize: 15, fontWeight: 700, marginTop: 20 },
+  padBtn: { minWidth: 76, background: "rgba(30,40,70,0.9)", border: `1px solid ${C.borderBright}`, color: C.text, borderRadius: 12, padding: "14px 20px", fontSize: 20, cursor: "pointer", userSelect: "none", touchAction: "none" },
+  bonusBtn: { background: `linear-gradient(90deg, ${C.sunDeep}, ${C.sun})`, border: "none", color: "#2a1800", borderRadius: 10, padding: "12px 22px", cursor: "pointer", fontSize: 17, fontWeight: 700, marginTop: 20 },
 };
