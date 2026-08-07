@@ -269,7 +269,9 @@ export const GAMES_DEF = {
         for (let j = i + 1; j < g.bodies.length; j++) {
           const b = g.bodies[j]; if (b.dead || a.dead) continue;
           if (a.tier !== b.tier) continue;
-          if (Math.hypot(b.x - a.x, b.y - a.y) < (a.r + b.r) * 0.9) {
+          // merge as soon as two same-type bodies touch (small tolerance so a
+          // contact after relaxation, where d ≈ a.r+b.r, still counts)
+          if (Math.hypot(b.x - a.x, b.y - a.y) < (a.r + b.r) + 1.5) {
             a.dead = true; b.dead = true;
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, tier = a.tier;
             g.score += P[tier];
