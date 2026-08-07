@@ -113,7 +113,30 @@ function slStars(ctx, g, complete) {
   });
 }
 
-/* ---------- the four games ---------- */
+/* --- Merge Galaxy helpers --- */
+const MERGE_TIERS = [
+  { r: 13, color: "#8b96b8", name: { en: "Asteroid", ja: "小惑星" } },
+  { r: 17, color: "#63d3f0", name: { en: "Comet", ja: "彗星" } },
+  { r: 22, color: "#dfe9ff", name: { en: "Moon", ja: "月" } },
+  { r: 28, color: "#5b8dee", name: { en: "Planet", ja: "惑星" } },
+  { r: 35, color: "#f5a742", name: { en: "Gas Giant", ja: "ガス惑星" } },
+  { r: 43, color: "#ffcf6b", name: { en: "Star", ja: "恒星" } },
+  { r: 52, color: "#b58cf0", name: { en: "Galaxy", ja: "銀河" } },
+];
+const MERGE_POINTS = [3, 6, 10, 16, 24, 34, 50];
+function drawOrb(ctx, x, y, r, color) {
+  const glow = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 1.6);
+  glow.addColorStop(0, color); glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  const gr = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.15, x, y, r);
+  gr.addColorStop(0, "#ffffff"); gr.addColorStop(0.4, color); gr.addColorStop(1, color);
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+/* ---------- the games ---------- */
 export const GAMES_DEF = {
   solar: {
     meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
@@ -216,6 +239,136 @@ export const GAMES_DEF = {
       for (const s of g.bg) { s.y += s.sp * ramp * dt; if (s.y > H) { s.y = -s.len; s.x = Math.random() * W; } ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + s.len * ramp); ctx.stroke(); }
       for (const o of g.obs) drawRock(ctx, o);
       drawShip(ctx, g.x, H - 30);
+    },
+  },
+  merge: {
+    meta: {
+      title: { en: "Merge Galaxy", ja: "マージ・ギャラクシー" },
+      goal: {
+        en: "Drop worlds into the well — two of the same merge into the next: asteroid → comet → moon → planet → gas giant → star → galaxy. Bigger merges score more.",
+        ja: "天体を井戸に落とそう——同じもの2つが次の天体に合体：小惑星→彗星→月→惑星→ガス惑星→恒星→銀河。大きい合体ほど高得点。",
+      },
+      avoid: {
+        en: "Don't let the pile stack up over the top line — each overflow costs a life.",
+        ja: "積み上がった天体を上限ラインより高くしないこと——あふれるたびにライフを1つ失う。",
+      },
+      pad: "lrf",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.wellW = Math.min(api.W - 60, 360);
+      g.wellX0 = (api.W - g.wellW) / 2;
+      g.wellX1 = g.wellX0 + g.wellW;
+      g.floorY = api.H - 12;
+      g.dangerY = 70;
+      g.hoverY = 44;
+      g.bodies = [];
+      g.curTier = Math.floor(Math.random() * 3);
+      g.nextTier = Math.floor(Math.random() * 3);
+      g.curX = api.W / 2;
+      g.cd = 0;
+      g.overflowT = 0;
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys } = api, spd = 330, T = MERGE_TIERS, P = MERGE_POINTS;
+      const curR = T[g.curTier].r;
+      if (keys.left) g.curX -= spd * dt;
+      if (keys.right) g.curX += spd * dt;
+      if (g.pdown && g.px != null) g.curX += clamp(g.px - g.curX, -spd * dt, spd * dt);
+      g.curX = clamp(g.curX, g.wellX0 + curR, g.wellX1 - curR);
+      // drop on FIRE or tap, on cooldown
+      g.cd -= dt;
+      const wantDrop = keys.fire || g.tapped;
+      if (wantDrop && g.cd <= 0 && g.bodies.length < 40) {
+        g.bodies.push({ x: g.curX, y: g.hoverY + curR, vx: 0, vy: 0, tier: g.curTier, r: curR });
+        g.curTier = g.nextTier;
+        g.nextTier = Math.floor(Math.random() * 3);
+        g.cd = 0.4;
+      }
+      g.tapped = null;
+      // integrate
+      const GRAV = 1700;
+      for (const b of g.bodies) {
+        b.vy = clamp(b.vy + GRAV * dt, -700, 900);
+        b.vx = clamp(b.vx, -500, 500);
+        b.x += b.vx * dt; b.y += b.vy * dt; b.vx *= 0.99;
+      }
+      // relaxation: walls, floor, body-body separation
+      for (let iter = 0; iter < 4; iter++) {
+        for (const b of g.bodies) {
+          if (b.x - b.r < g.wellX0) { b.x = g.wellX0 + b.r; b.vx = Math.abs(b.vx) * 0.3; }
+          if (b.x + b.r > g.wellX1) { b.x = g.wellX1 - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
+          if (b.y + b.r > g.floorY) { b.y = g.floorY - b.r; if (b.vy > 0) b.vy *= -0.2; }
+        }
+        for (let i = 0; i < g.bodies.length; i++) {
+          for (let j = i + 1; j < g.bodies.length; j++) {
+            const a = g.bodies[i], b = g.bodies[j];
+            const dx = b.x - a.x, dy = b.y - a.y; let d = Math.hypot(dx, dy);
+            const min = a.r + b.r;
+            if (d < min) {
+              if (d < 0.001) d = 0.001;
+              const nx = dx / d, ny = dy / d, push = (min - d) * 0.5;
+              a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+              const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+              if (rel < 0) {
+                const imp = rel * 0.85 * 0.5;
+                a.vx += nx * imp; a.vy += ny * imp; b.vx -= nx * imp; b.vy -= ny * imp;
+              }
+            }
+          }
+        }
+      }
+      // merges (capped per frame to avoid runaway chains)
+      let merges = 0;
+      for (let i = 0; i < g.bodies.length && merges < 6; i++) {
+        const a = g.bodies[i]; if (a.dead) continue;
+        for (let j = i + 1; j < g.bodies.length; j++) {
+          const b = g.bodies[j]; if (b.dead || a.dead) continue;
+          if (a.tier !== b.tier) continue;
+          if (Math.hypot(b.x - a.x, b.y - a.y) < (a.r + b.r) * 0.9) {
+            a.dead = true; b.dead = true;
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, tier = a.tier;
+            g.score += P[tier];
+            spawnParts(g, mx, my, T[tier].r, T[tier].color);
+            if (tier < T.length - 1) {
+              g.bodies.push({ x: mx, y: my, vx: 0, vy: -140, tier: tier + 1, r: T[tier + 1].r });
+            } else { g.score += P[tier] * 3; spawnParts(g, mx, my, T[tier].r, "#ffffff"); }
+            merges++; break;
+          }
+        }
+      }
+      if (merges) g.bodies = g.bodies.filter((b) => !b.dead);
+      // overflow: settled body above danger line for ~2s costs a life
+      let topOver = false;
+      for (const b of g.bodies) {
+        if (Math.abs(b.vy) < 22 && Math.abs(b.vx) < 22 && b.y - b.r < g.dangerY) { topOver = true; break; }
+      }
+      g.overflowT = topOver ? g.overflowT + dt : 0;
+      if (g.overflowT >= 2) {
+        lose(g, over);
+        g.bodies.sort((a, b) => (a.y - a.r) - (b.y - b.r));
+        g.bodies.splice(0, Math.min(3, g.bodies.length));
+        g.overflowT = 0;
+      }
+      // ---- draw ----
+      drawBg(ctx, g, W, H);
+      ctx.strokeStyle = "rgba(120,150,210,0.28)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(g.wellX0, g.dangerY - 30); ctx.lineTo(g.wellX0, g.floorY);
+      ctx.lineTo(g.wellX1, g.floorY); ctx.lineTo(g.wellX1, g.dangerY - 30); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,122,107,0.35)"; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.moveTo(g.wellX0, g.dangerY); ctx.lineTo(g.wellX1, g.dangerY); ctx.stroke();
+      ctx.setLineDash([]);
+      for (const b of g.bodies) drawOrb(ctx, b.x, b.y, b.r, T[b.tier].color);
+      ctx.strokeStyle = "rgba(255,255,255,0.15)"; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+      ctx.beginPath(); ctx.moveTo(g.curX, g.hoverY + curR); ctx.lineTo(g.curX, g.floorY); ctx.stroke();
+      ctx.setLineDash([]);
+      drawOrb(ctx, g.curX, g.hoverY, curR, T[g.curTier].color);
+      const px = g.wellX0 + 22, py = 100, pr = Math.min(12, T[g.nextTier].r * 0.5);
+      ctx.fillStyle = C.faint; ctx.font = `700 10px ${mono}`; ctx.textAlign = "center";
+      ctx.fillText("NEXT", px, py - 18);
+      drawOrb(ctx, px, py, pr, T[g.nextTier].color);
+      ctx.textAlign = "left";
     },
   },
 };
@@ -372,7 +525,7 @@ export function ArcadeShell({ reward, def, onExit, onFinish }) {
 
 /* Picks a RANDOM game from the four and runs it with the reward. */
 export function BonusGame({ reward, onExit, onFinish }) {
-  const id = useMemo(() => ["solar", "star", "sky", "scale"][Math.floor(Math.random() * 4)], []);
+  const id = useMemo(() => ["solar", "star", "sky", "scale", "merge"][Math.floor(Math.random() * 5)], []);
   return <ArcadeShell reward={reward} onExit={onExit} onFinish={onFinish} def={GAMES_DEF[id]} />;
 }
 

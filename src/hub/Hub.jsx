@@ -19,6 +19,24 @@ const CHAPTERS = [
     },
     href: "chapters/ch1/index.html",
   },
+  {
+    n: 2,
+    title: { en: "Observing the Sky: The Birth of Astronomy", ja: "空を観る：天文学のはじまり" },
+    blurb: {
+      en: "Map the celestial sphere, trace the Sun and the wandering planets, and follow the long road from an Earth-centred cosmos to Galileo's telescope.",
+      ja: "天球を描き、太陽とさまよう惑星の動きを追い、地球中心の宇宙観からガリレオの望遠鏡へと至る長い道のりをたどろう。",
+    },
+    href: "chapters/ch2/index.html",
+  },
+  {
+    n: 3,
+    title: { en: "Orbits and Gravity", ja: "軌道と重力" },
+    blurb: {
+      en: "From Kepler's ellipses to Newton's universal gravity — see why planets sweep, why we're weightless in orbit, and how a planet was found with pure math.",
+      ja: "ケプラーの楕円からニュートンの万有引力へ——惑星がなぜ速度を変えるのか、軌道上でなぜ無重力になるのか、そして計算だけで惑星が見つかった理由を探ろう。",
+    },
+    href: "chapters/ch3/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };

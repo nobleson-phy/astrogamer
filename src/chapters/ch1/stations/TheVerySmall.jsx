@@ -164,7 +164,7 @@ export function TheVerySmall() {
                   <span style={{ fontFamily: "'Spectral', serif", fontSize: 17 }}>{c.title}</span>
                   <span style={{ color: C.cool, fontFamily: mono }}>{on ? "−" : "+"}</span>
                 </div>
-                {on && <p style={{ fontSize: 15, lineHeight: 1.6, color: "#c8d0e4", margin: "10px 0 0" }}>{tr(c.body, lang)}</p>}
+                {on && <p style={{ fontSize: 15, lineHeight: 1.6, color: "#dbe4ff", margin: "10px 0 0" }}>{tr(c.body, lang)}</p>}
               </button>
             );
           })}

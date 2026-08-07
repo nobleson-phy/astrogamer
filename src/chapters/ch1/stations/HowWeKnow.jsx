@@ -167,7 +167,7 @@ export function HowWeKnow() {
                     <span style={{ fontFamily: display, fontSize: 18, color: C.text }}>{tr(s.t, lang)}</span>
                     {s.accent && <span style={{ fontFamily: mono, fontSize: 11.5, color: C.sun }}>{t.hereHint}</span>}
                   </div>
-                  <p style={{ fontSize: 15, lineHeight: 1.6, color: "#c8d0e4", margin: "6px 0 0" }}>{tr(s.b, lang)}</p>
+                  <p style={{ fontSize: 15, lineHeight: 1.6, color: "#dbe4ff", margin: "6px 0 0" }}>{tr(s.b, lang)}</p>
                 </div>
               </div>
             );

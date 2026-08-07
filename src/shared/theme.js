@@ -3,11 +3,11 @@
    ============================================================ */
 
 export const C = {
-  void: "#05060d", deep: "#0a0e1c", panel: "rgba(15,21,40,0.72)",
-  border: "rgba(120,150,210,0.16)", borderBright: "rgba(140,175,235,0.35)",
-  text: "#e9edf7", muted: "#aeb7d2", faint: "#8b96b8",
-  sun: "#ffcf6b", sunDeep: "#f5a742", cool: "#63d3f0", violet: "#b58cf0",
-  danger: "#ff7a6b", good: "#5fd39a",
+  void: "#05060d", deep: "#0a0e1c", panel: "rgba(18,25,48,0.74)",
+  border: "rgba(130,160,220,0.22)", borderBright: "rgba(150,188,248,0.45)",
+  text: "#f4f7ff", muted: "#c6cff4", faint: "#a2aee0",
+  sun: "#ffd23d", sunDeep: "#ff9e2c", cool: "#3fddff", violet: "#c98bff",
+  danger: "#ff6b6b", good: "#3fe89b",
 };
 
 export const FONT_IMPORT =
