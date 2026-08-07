@@ -9,7 +9,6 @@ import { useLang, tr } from "./i18n.jsx";
 import { C, ui, mono } from "./theme.js";
 import { clamp, setupCanvas } from "./helpers.js";
 import { styles } from "./styles.js";
-import { CONSTELLATIONS } from "./interactives/data.js";
 
 const STR = {
   en: {
@@ -84,34 +83,6 @@ function drawShip(ctx, x, y) {
   ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 4, y + 12); ctx.lineTo(x, y + 18 + Math.random() * 6); ctx.closePath(); ctx.fill();
 }
 
-/* --- Constellation Connect helpers --- */
-function slSetup(g, api) {
-  const idx = Math.floor(Math.random() * CONSTELLATIONS.length);
-  const con = CONSTELLATIONS[idx];
-  const padX = 70, padY = 60;
-  g.con = con;
-  g.pts = con.stars.map(([x, y]) => [padX + x * (api.W - 2 * padX), padY + y * (api.H - 2 * padY)]);
-  g.order = 0; g.max = Math.max(3.5, 7 / api.diff); g.time = g.max; g.done = false; g.doneT = 0;
-}
-function slLinks(ctx, g, complete) {
-  ctx.strokeStyle = "rgba(99,211,240,0.7)"; ctx.lineWidth = 2;
-  if (complete) {
-    for (const [a, b] of g.con.lines) { ctx.beginPath(); ctx.moveTo(g.pts[a][0], g.pts[a][1]); ctx.lineTo(g.pts[b][0], g.pts[b][1]); ctx.stroke(); }
-  } else {
-    for (let i = 1; i < g.order; i++) { ctx.beginPath(); ctx.moveTo(g.pts[i - 1][0], g.pts[i - 1][1]); ctx.lineTo(g.pts[i][0], g.pts[i][1]); ctx.stroke(); }
-  }
-}
-function slStars(ctx, g, complete) {
-  g.pts.forEach((p, i) => {
-    const tapped = i < g.order || complete, next = !complete && i === g.order;
-    const gr = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], 12);
-    gr.addColorStop(0, tapped ? "#63d3f0" : "#dfe9ff"); gr.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1], 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = tapped ? "#63d3f0" : "#ffffff"; ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
-    if (next) { ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 2; const pr = 10 + Math.sin(g.t * 6) * 3; ctx.beginPath(); ctx.arc(p[0], p[1], pr, 0, Math.PI * 2); ctx.stroke(); }
-    if (!tapped) { ctx.fillStyle = "#e9edf7"; ctx.font = `700 13px ${mono}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(i + 1), p[0], p[1]); ctx.textBaseline = "alphabetic"; }
-  });
-}
 
 /* --- Merge Galaxy helpers --- */
 const MERGE_TIERS = [
@@ -190,33 +161,6 @@ export const GAMES_DEF = {
       const glow = ctx.createRadialGradient(g.x, cy, 2, g.x, cy, 26); glow.addColorStop(0, "rgba(99,211,240,0.4)"); glow.addColorStop(1, "rgba(99,211,240,0)");
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.x, cy, 26, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = C.cool; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, cy + 4, 22, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
-    },
-  },
-  sky: {
-    meta: { title: { en: "Constellation Connect", ja: "星座つなぎ" }, goal: { en: "Tap the numbered stars in order (1, 2, 3…) to draw it. Finish faster for more points.", ja: "番号のついた星を順番（1・2・3…）にタップして描こう。早いほど高得点。" }, avoid: { en: "A wrong star, or running out of time, costs a life.", ja: "違う星をタップするか時間切れになるとライフを失う。" }, pad: "none" },
-    init: (g, api) => { g.bg = makeStars(api.W, api.H, 90); slSetup(g, api); },
-    step: (g, ctx, dt, api, over) => {
-      const { W, H, lang } = api;
-      drawBg(ctx, g, W, H);
-      if (g.done) {
-        g.doneT -= dt; slLinks(ctx, g, true); slStars(ctx, g, true);
-        ctx.fillStyle = C.cool; ctx.font = `600 19px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 34);
-        if (g.doneT <= 0) slSetup(g, api);
-        return;
-      }
-      g.time -= dt;
-      if (g.time <= 0) { lose(g, over); g.time = g.max; }
-      if (g.tapped) {
-        const { x, y } = g.tapped; g.tapped = null;
-        let hit = -1, bd = 1e9;
-        g.pts.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - y); if (d < 24 && d < bd) { bd = d; hit = i; } });
-        if (hit === g.order) { g.order++; if (g.order >= g.pts.length) { g.score += Math.round(20 + g.time * 3); g.done = true; g.doneT = 1.2; } }
-        else if (hit >= 0) { lose(g, over); spawnParts(g, g.pts[hit][0], g.pts[hit][1], 7, "#ff7a6b"); }
-      }
-      slLinks(ctx, g, false); slStars(ctx, g, false);
-      ctx.fillStyle = "rgba(120,150,210,0.2)"; ctx.fillRect(14, H - 16, W - 28, 5);
-      ctx.fillStyle = C.sun; ctx.fillRect(14, H - 16, (W - 28) * clamp(g.time / g.max, 0, 1), 5);
-      ctx.fillStyle = C.muted; ctx.font = `500 15px ${ui}`; ctx.textAlign = "center"; ctx.fillText(tr(g.con.name, lang), W / 2, 30);
     },
   },
   scale: {
@@ -369,6 +313,364 @@ export const GAMES_DEF = {
       ctx.fillText("NEXT", px, py - 18);
       drawOrb(ctx, px, py, pr, T[g.nextTier].color);
       ctx.textAlign = "left";
+    },
+  },
+
+  lander: {
+    meta: {
+      title: { en: "Lunar Lander", ja: "月着陸船" },
+      goal: { en: "Ease the lander down onto the flat pad — touch down slow and level to score a bonus.", ja: "着陸船を平らなパッドにそっと降ろそう——ゆっくり水平に着地するとボーナス得点。" },
+      avoid: { en: "Coming in too fast or missing the pad crashes the lander and costs a life.", ja: "速すぎたりパッドを外すと墜落してライフを1つ失う。" },
+      pad: "lrf",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.groundY = api.H - 42;
+      g.padW = 120;
+      g.x = api.W / 2; g.y = 66; g.vx = 0; g.vy = 0;
+      g.padX = 40 + Math.random() * (api.W - 80 - g.padW);
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, keys } = api, GRAV = 30, side = 72, main = 96, maxV = 190, lr = 13;
+      const thrust = keys.fire || g.pdown;
+      if (keys.left) g.vx -= side * dt;
+      if (keys.right) g.vx += side * dt;
+      g.vy += GRAV * dt;
+      if (thrust) g.vy -= main * dt;
+      g.vx = clamp(g.vx, -maxV, maxV); g.vy = clamp(g.vy, -maxV, maxV);
+      g.x += g.vx * dt; g.y += g.vy * dt;
+      if (g.x < 12) { g.x = 12; g.vx = 0; }
+      if (g.x > W - 12) { g.x = W - 12; g.vx = 0; }
+      if (g.y < 20) { g.y = 20; if (g.vy < 0) g.vy = 0; }
+      if (g.y + lr >= g.groundY) {
+        g.y = g.groundY - lr;
+        const overPad = g.x > g.padX && g.x < g.padX + g.padW;
+        const soft = Math.abs(g.vy) < 46 && Math.abs(g.vx) < 34;
+        if (overPad && soft) {
+          g.score += 50 + Math.round(Math.max(0, 40 - Math.abs(g.vy)));
+          spawnParts(g, g.x, g.groundY, 14, "#3fe89b");
+          g.padW = Math.max(64, g.padW - 8);
+          g.padX = 40 + Math.random() * (W - 80 - g.padW);
+        } else {
+          spawnParts(g, g.x, g.groundY, 18, "#ff7a6b");
+          lose(g, over);
+          g.padW = 120;
+          g.padX = 40 + Math.random() * (W - 80 - g.padW);
+        }
+        g.x = 40 + Math.random() * (W - 80); g.y = 66; g.vx = 0; g.vy = 0;
+      }
+      // ---- draw ----
+      drawBg(ctx, g, W, api.H);
+      ctx.strokeStyle = "rgba(120,150,210,0.5)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, g.groundY); ctx.lineTo(W, g.groundY); ctx.stroke();
+      const pg = ctx.createLinearGradient(g.padX, 0, g.padX + g.padW, 0);
+      pg.addColorStop(0, "rgba(63,232,155,0)"); pg.addColorStop(0.5, "#3fe89b"); pg.addColorStop(1, "rgba(63,232,155,0)");
+      ctx.strokeStyle = pg; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(g.padX, g.groundY); ctx.lineTo(g.padX + g.padW, g.groundY); ctx.stroke();
+      ctx.fillStyle = "#3fe89b";
+      ctx.beginPath(); ctx.arc(g.padX, g.groundY, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(g.padX + g.padW, g.groundY, 3, 0, Math.PI * 2); ctx.fill();
+      if (thrust) {
+        ctx.fillStyle = "#ffcf6b";
+        ctx.beginPath(); ctx.moveTo(g.x - 5, g.y + lr - 2); ctx.lineTo(g.x + 5, g.y + lr - 2); ctx.lineTo(g.x, g.y + lr + 12 + Math.random() * 8); ctx.closePath(); ctx.fill();
+      }
+      const soft = Math.abs(g.vy) < 46 && Math.abs(g.vx) < 34;
+      ctx.fillStyle = soft ? "#3fe89b" : "#eaf3ff";
+      ctx.beginPath(); ctx.moveTo(g.x, g.y - lr); ctx.lineTo(g.x - lr, g.y + lr); ctx.lineTo(g.x + lr, g.y + lr); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#9aa2b4"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(g.x - lr, g.y + lr); ctx.lineTo(g.x - lr - 4, g.y + lr + 5); ctx.moveTo(g.x + lr, g.y + lr); ctx.lineTo(g.x + lr + 4, g.y + lr + 5); ctx.stroke();
+      ctx.fillStyle = soft ? C.good : C.danger; ctx.font = `700 12px ${mono}`; ctx.textAlign = "left";
+      ctx.fillText(`vy ${g.vy > 0 ? "↓" : "↑"}${Math.abs(g.vy).toFixed(0)}  vx ${Math.abs(g.vx).toFixed(0)}`, 14, api.H - 14);
+    },
+  },
+
+  ascent: {
+    meta: {
+      title: { en: "Rocket Ascent", ja: "ロケット上昇" },
+      goal: { en: "Tap to thrust and keep climbing — slip through each asteroid belt's gap to score.", ja: "タップで噴射して上昇を続けよう——小惑星帯の隙間を抜けるたび得点。" },
+      avoid: { en: "Hitting a belt or the top or bottom edge costs a life.", ja: "小惑星帯や画面の上下端に当たるとライフを1つ失う。" },
+      pad: "lrf",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.rx = api.W * 0.3; g.y = api.H / 2; g.vy = 0;
+      g.belts = []; g.spawn = 0.8; g.wasFire = false;
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys } = api, r = 14;
+      const speed = 130 * (1 + g.t * 0.02);
+      const press = keys.fire || g.pdown;
+      if ((press && !g.wasFire) || g.tapped) g.vy = -262;
+      g.wasFire = press; g.tapped = null;
+      g.vy += 780 * dt; g.vy = clamp(g.vy, -420, 540);
+      g.y += g.vy * dt;
+      g.spawn -= dt;
+      if (g.spawn <= 0) {
+        const gapH = 138, gapY = 70 + Math.random() * (H - 140 - gapH);
+        g.belts.push({ x: W + 24, w: 36, gapY, gapH, passed: false });
+        g.spawn = 220 / speed;
+      }
+      const reset = () => {
+        lose(g, over);
+        g.y = H / 2; g.vy = 0;
+        g.belts = g.belts.filter((b) => b.x > g.rx + 90 || b.x + b.w < g.rx - 90);
+      };
+      for (const b of g.belts) b.x -= speed * dt;
+      g.belts = g.belts.filter((b) => b.x + b.w > -10);
+      if (g.y - r < 0 || g.y + r > H) { reset(); }
+      else for (const b of g.belts) {
+        if (g.rx + r > b.x && g.rx - r < b.x + b.w) {
+          if (g.y - r < b.gapY || g.y + r > b.gapY + b.gapH) { reset(); break; }
+        }
+        if (!b.passed && b.x + b.w < g.rx) { b.passed = true; g.score += 1; spawnParts(g, g.rx, g.y, 8, "#3fddff"); }
+      }
+      // ---- draw ----
+      drawBg(ctx, g, W, H);
+      for (const b of g.belts) {
+        ctx.fillStyle = "#6b7180"; ctx.strokeStyle = "#9aa2b4"; ctx.lineWidth = 1.5;
+        ctx.fillRect(b.x, 0, b.w, b.gapY); ctx.strokeRect(b.x, 0, b.w, b.gapY);
+        ctx.fillRect(b.x, b.gapY + b.gapH, b.w, H - b.gapY - b.gapH); ctx.strokeRect(b.x, b.gapY + b.gapH, b.w, H - b.gapY - b.gapH);
+        ctx.strokeStyle = "rgba(63,221,255,0.5)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(b.x + b.w / 2, b.gapY); ctx.lineTo(b.x + b.w / 2, b.gapY + b.gapH); ctx.stroke();
+      }
+      const glow = ctx.createRadialGradient(g.rx, g.y, 2, g.rx, g.y, 24);
+      glow.addColorStop(0, "rgba(255,207,107,0.5)"); glow.addColorStop(1, "rgba(255,207,107,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.rx, g.y, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.rx, g.y - r); ctx.lineTo(g.rx - 9, g.y + r); ctx.lineTo(g.rx + 9, g.y + r); ctx.closePath(); ctx.fill();
+      if (press) { ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(g.rx - 4, g.y + r); ctx.lineTo(g.rx + 4, g.y + r); ctx.lineTo(g.rx, g.y + r + 12 + Math.random() * 6); ctx.closePath(); ctx.fill(); }
+    },
+  },
+
+  shield: {
+    meta: {
+      title: { en: "Solar Flare Shield", ja: "太陽フレア・シールド" },
+      goal: { en: "Rotate your shield arc to intercept incoming solar flares before they reach the planet.", ja: "シールドの弧を回して、太陽フレアが惑星に届く前に受け止めよう。" },
+      avoid: { en: "Every flare that slips past the shield and strikes the planet costs a life.", ja: "シールドをすり抜けて惑星に当たるフレアごとにライフを1つ失う。" },
+      pad: "lr",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.cx = api.W / 2; g.cy = api.H / 2;
+      g.ang = -Math.PI / 2; g.arcHalf = 0.58; g.R = 96; g.planetR = 30;
+      g.flares = []; g.spawn = 0.9;
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { keys } = api, rot = 3.1;
+      if (keys.left) g.ang -= rot * dt;
+      if (keys.right) g.ang += rot * dt;
+      g.spawn -= dt; const iv = Math.max(0.4, 1.15 - g.t * 0.02);
+      if (g.spawn <= 0) { g.flares.push({ a: Math.random() * Math.PI * 2, d: 270, hit: false }); g.spawn = iv; }
+      const sp = 96 + g.t * 1.2;
+      for (const f of g.flares) {
+        if (f.hit) continue;
+        const pd = f.d; f.d -= sp * dt;
+        if (pd > g.R && f.d <= g.R) {
+          let da = f.a - g.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
+          if (Math.abs(da) < g.arcHalf) { f.hit = true; g.score += 1; spawnParts(g, g.cx + Math.cos(f.a) * g.R, g.cy + Math.sin(f.a) * g.R, 10, "#3fddff"); }
+        }
+        if (!f.hit && f.d <= g.planetR) { f.hit = true; spawnParts(g, g.cx + Math.cos(f.a) * g.planetR, g.cy + Math.sin(f.a) * g.planetR, 12, "#ff7a6b"); lose(g, over); }
+      }
+      g.flares = g.flares.filter((f) => !f.hit);
+      // ---- draw ----
+      drawBg(ctx, g, api.W, api.H);
+      const pg = ctx.createRadialGradient(g.cx, g.cy, 4, g.cx, g.cy, g.planetR * 1.8);
+      pg.addColorStop(0, "rgba(91,141,238,0.6)"); pg.addColorStop(1, "rgba(91,141,238,0)");
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(g.cx, g.cy, g.planetR * 1.8, 0, Math.PI * 2); ctx.fill();
+      const gr = ctx.createRadialGradient(g.cx - 8, g.cy - 8, 4, g.cx, g.cy, g.planetR);
+      gr.addColorStop(0, "#8fb4ff"); gr.addColorStop(1, "#3a5aa8");
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(g.cx, g.cy, g.planetR, 0, Math.PI * 2); ctx.fill();
+      for (const f of g.flares) {
+        const x = g.cx + Math.cos(f.a) * f.d, y = g.cy + Math.sin(f.a) * f.d;
+        const x2 = g.cx + Math.cos(f.a) * (f.d + 18), y2 = g.cy + Math.sin(f.a) * (f.d + 18);
+        ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+      ctx.lineCap = "butt";
+      ctx.strokeStyle = C.cool; ctx.lineWidth = 9;
+      ctx.beginPath(); ctx.arc(g.cx, g.cy, g.R, g.ang - g.arcHalf, g.ang + g.arcHalf); ctx.stroke();
+    },
+  },
+
+  breaker: {
+    meta: {
+      title: { en: "Meteor Breaker", ja: "メテオ・ブレイカー" },
+      goal: { en: "Bounce the comet off your paddle to shatter every asteroid brick above.", ja: "パドルで彗星を弾き返し、上の小惑星ブロックをすべて砕こう。" },
+      avoid: { en: "Letting the comet fall past the paddle costs a life.", ja: "彗星をパドルの下に落とすとライフを1つ失う。" },
+      pad: "lr",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.paddleW = 96; g.paddleX = api.W / 2; g.paddleY = api.H - 26;
+      g.build = () => {
+        const cols = 8, rows = 4, top = 54, bw = (api.W - 40) / cols, bh = 20;
+        const cols2 = ["#f5a742", "#ffcf6b", "#63d3f0", "#c98bff"];
+        g.bricks = [];
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+          g.bricks.push({ x: 20 + c * bw, y: top + r * (bh + 6), w: bw - 5, h: bh, pts: (rows - r) * 2, color: cols2[r % cols2.length] });
+      };
+      g.build();
+      g.serve = () => { g.ball = { x: g.paddleX, y: g.paddleY - 12, vx: 130 * (Math.random() < 0.5 ? -1 : 1), vy: -240 }; };
+      g.serve();
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys } = api, spd = 360, r = 7, b = g.ball;
+      if (keys.left) g.paddleX -= spd * dt;
+      if (keys.right) g.paddleX += spd * dt;
+      if (g.pdown && g.px != null) g.paddleX += clamp(g.px - g.paddleX, -spd * dt, spd * dt);
+      g.paddleX = clamp(g.paddleX, g.paddleW / 2, W - g.paddleW / 2);
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); }
+      if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); }
+      if (b.y < 40 + r) { b.y = 40 + r; b.vy = Math.abs(b.vy); }
+      if (b.vy > 0 && b.y + r >= g.paddleY && b.y < g.paddleY + 14 && b.x > g.paddleX - g.paddleW / 2 - r && b.x < g.paddleX + g.paddleW / 2 + r) {
+        const off = clamp((b.x - g.paddleX) / (g.paddleW / 2), -1, 1);
+        const sp = Math.hypot(b.vx, b.vy), ang = -Math.PI / 2 + off * 1.05;
+        b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp; b.y = g.paddleY - r - 1;
+      }
+      for (const k of g.bricks) {
+        if (k.dead) continue;
+        if (b.x + r > k.x && b.x - r < k.x + k.w && b.y + r > k.y && b.y - r < k.y + k.h) {
+          k.dead = true; g.score += k.pts; spawnParts(g, b.x, b.y, 10, k.color);
+          const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
+          if (Math.abs(b.x - cx) / k.w > Math.abs(b.y - cy) / k.h) b.vx *= -1; else b.vy *= -1;
+          break;
+        }
+      }
+      g.bricks = g.bricks.filter((k) => !k.dead);
+      if (g.bricks.length === 0) { g.score += 20; g.build(); }
+      if (b.y - r > H) { lose(g, over); g.serve(); }
+      // ---- draw ----
+      drawBg(ctx, g, W, H);
+      for (const k of g.bricks) {
+        ctx.fillStyle = k.color; ctx.globalAlpha = 0.85; ctx.fillRect(k.x, k.y, k.w, k.h); ctx.globalAlpha = 1;
+        ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1; ctx.strokeRect(k.x, k.y, k.w, k.h);
+      }
+      const bg = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 16);
+      bg.addColorStop(0, "#eaf3ff"); bg.addColorStop(1, "rgba(99,211,240,0)");
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(b.x, b.y, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C.cool; ctx.fillRect(g.paddleX - g.paddleW / 2, g.paddleY, g.paddleW, 10);
+      ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.fillRect(g.paddleX - g.paddleW / 2, g.paddleY, g.paddleW, 3);
+    },
+  },
+
+  docking: {
+    meta: {
+      title: { en: "Satellite Docking", ja: "衛星ドッキング" },
+      goal: { en: "Slide the capsule under the spinning station and fire when the green port swings to the bottom.", ja: "カプセルを回転する宇宙ステーションの下に合わせ、緑のポートが下に来た瞬間に発射しよう。" },
+      avoid: { en: "Slamming into the station's body instead of the port costs a life.", ja: "ポートではなくステーション本体に激突するとライフを1つ失う。" },
+      pad: "lrf",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.sx = api.W / 2; g.sy = 118; g.Rst = 54; g.portHalf = 0.55;
+      g.stAng = 0; g.stSpeed = 1.25;
+      g.capX = api.W / 2; g.capY = api.H - 30; g.flying = false; g.wasFire = false; g.trail = [];
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys } = api, r = 8, capSpeed = 268;
+      g.stAng += g.stSpeed * dt;
+      const press = keys.fire || g.pdown;
+      const launch = (press && !g.wasFire) || g.tapped;
+      g.wasFire = press; g.tapped = null;
+      if (!g.flying) {
+        if (keys.left) g.capX -= 320 * dt;
+        if (keys.right) g.capX += 320 * dt;
+        if (g.pdown && g.px != null) g.capX += clamp(g.px - g.capX, -320 * dt, 320 * dt);
+        g.capX = clamp(g.capX, 16, W - 16);
+        if (launch) { g.flying = true; g.pd0 = Math.hypot(g.capX - g.sx, g.capY - g.sy); }
+      } else {
+        const pd = Math.hypot(g.capX - g.sx, g.capY - g.sy);
+        g.capY -= capSpeed * dt;
+        g.trail.push({ x: g.capX, y: g.capY }); if (g.trail.length > 10) g.trail.shift();
+        const nd = Math.hypot(g.capX - g.sx, g.capY - g.sy);
+        if (pd > g.Rst && nd <= g.Rst) {
+          const ca = Math.atan2(g.capY - g.sy, g.capX - g.sx);
+          let da = ca - g.stAng; da = Math.atan2(Math.sin(da), Math.cos(da));
+          if (Math.abs(da) < g.portHalf) {
+            g.score += 40; spawnParts(g, g.capX, g.capY, 14, "#3fe89b");
+            g.stSpeed = Math.min(3.4, g.stSpeed + 0.28);
+          } else {
+            spawnParts(g, g.capX, g.capY, 14, "#ff7a6b"); lose(g, over);
+          }
+          g.flying = false; g.capX = W / 2; g.capY = H - 30; g.trail = [];
+        } else if (g.capY < -20) { g.flying = false; g.capX = W / 2; g.capY = H - 30; g.trail = []; }
+      }
+      // ---- draw ----
+      drawBg(ctx, g, W, H);
+      const sg = ctx.createRadialGradient(g.sx, g.sy, 8, g.sx, g.sy, g.Rst * 1.6);
+      sg.addColorStop(0, "rgba(201,139,255,0.35)"); sg.addColorStop(1, "rgba(201,139,255,0)");
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(g.sx, g.sy, g.Rst * 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = C.violet; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.arc(g.sx, g.sy, g.Rst, g.stAng + g.portHalf, g.stAng - g.portHalf + Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = C.good; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.arc(g.sx, g.sy, g.Rst, g.stAng - g.portHalf, g.stAng + g.portHalf); ctx.stroke();
+      ctx.fillStyle = "rgba(160,120,220,0.35)"; ctx.beginPath(); ctx.arc(g.sx, g.sy, g.Rst - 16, 0, Math.PI * 2); ctx.fill();
+      for (let i = 0; i < g.trail.length; i++) { const p = g.trail[i]; ctx.globalAlpha = i / g.trail.length * 0.6; ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.capX, g.capY - r); ctx.lineTo(g.capX - r, g.capY + r); ctx.lineTo(g.capX + r, g.capY + r); ctx.closePath(); ctx.fill();
+      if (!g.flying) { ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.setLineDash([4, 8]); ctx.beginPath(); ctx.moveTo(g.capX, g.capY - r); ctx.lineTo(g.capX, g.sy); ctx.stroke(); ctx.setLineDash([]); }
+    },
+  },
+
+  wormhole: {
+    meta: {
+      title: { en: "Wormhole Run", ja: "ワームホール・ラン" },
+      goal: { en: "Steer the ship through each gate's bright opening — grab stray stars for extra points.", ja: "宇宙船をゲートの明るい開口部に通そう——散らばる星を集めると追加得点。" },
+      avoid: { en: "Clipping a gate ring instead of its gap costs a life.", ja: "開口部ではなくゲートのリングに当たるとライフを1つ失う。" },
+      pad: "lr",
+    },
+    init: (g, api) => {
+      g.bg = makeStars(api.W, api.H, 60);
+      g.shipX = api.W / 2; g.shipY = api.H - 52;
+      g.gates = []; g.stars = []; g.spawn = 0.6; g.sspawn = 1.4;
+    },
+    step: (g, ctx, dt, api, over) => {
+      const { W, H, keys } = api, spd = 340;
+      const scroll = 120 * (1 + g.t * 0.02);
+      if (keys.left) g.shipX -= spd * dt;
+      if (keys.right) g.shipX += spd * dt;
+      if (g.pdown && g.px != null) g.shipX += clamp(g.px - g.shipX, -spd * dt, spd * dt);
+      g.shipX = clamp(g.shipX, 16, W - 16);
+      g.spawn -= dt;
+      if (g.spawn <= 0) { const gapW = 108, gapX = 30 + gapW / 2 + Math.random() * (W - 60 - gapW); g.gates.push({ y: -20, py: -20, gapX, gapW, scored: false }); g.spawn = 150 / scroll; }
+      g.sspawn -= dt;
+      if (g.sspawn <= 0) { g.stars.push({ x: 30 + Math.random() * (W - 60), y: -14 }); g.sspawn = 1.2 + Math.random() * 1.4; }
+      for (const gt of g.gates) { gt.py = gt.y; gt.y += scroll * dt; }
+      for (const gt of g.gates) {
+        if (!gt.scored && gt.py < g.shipY && gt.y >= g.shipY) {
+          gt.scored = true;
+          if (g.shipX > gt.gapX - gt.gapW / 2 && g.shipX < gt.gapX + gt.gapW / 2) { g.score += 1; spawnParts(g, g.shipX, g.shipY, 10, "#c98bff"); }
+          else { spawnParts(g, g.shipX, g.shipY, 12, "#ff7a6b"); lose(g, over); }
+        }
+      }
+      g.gates = g.gates.filter((gt) => gt.y < H + 30);
+      for (const s of g.stars) {
+        s.y += scroll * dt;
+        if (!s.hit && Math.abs(s.x - g.shipX) < 16 && Math.abs(s.y - g.shipY) < 16) { s.hit = true; g.score += 3; spawnParts(g, s.x, s.y, 8, "#ffcf6b"); }
+      }
+      g.stars = g.stars.filter((s) => !s.hit && s.y < H + 20);
+      // ---- draw ----
+      drawBg(ctx, g, W, H);
+      for (const gt of g.gates) {
+        ctx.strokeStyle = "rgba(201,139,255,0.35)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(W / 2, gt.y, W / 2 - 12, 12, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = C.violet; ctx.globalAlpha = 0.9;
+        const gl = gt.gapX - gt.gapW / 2, grr = gt.gapX + gt.gapW / 2;
+        ctx.fillRect(20, gt.y - 6, gl - 20, 12); ctx.fillRect(grr, gt.y - 6, W - 20 - grr, 12);
+        ctx.globalAlpha = 1; ctx.fillStyle = C.cool;
+        ctx.beginPath(); ctx.arc(gl, gt.y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(grr, gt.y, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      for (const s of g.stars) {
+        const sg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 12); sg.addColorStop(0, "#ffe08a"); sg.addColorStop(1, "rgba(255,207,107,0)");
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff4d6"; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      const glow = ctx.createRadialGradient(g.shipX, g.shipY, 2, g.shipX, g.shipY, 24);
+      glow.addColorStop(0, "rgba(99,211,240,0.5)"); glow.addColorStop(1, "rgba(99,211,240,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.shipX, g.shipY, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.shipX, g.shipY - 14); ctx.lineTo(g.shipX - 11, g.shipY + 11); ctx.lineTo(g.shipX + 11, g.shipY + 11); ctx.closePath(); ctx.fill();
     },
   },
 };
@@ -525,7 +827,7 @@ export function ArcadeShell({ reward, def, onExit, onFinish }) {
 
 /* Picks a RANDOM game from the four and runs it with the reward. */
 export function BonusGame({ reward, onExit, onFinish }) {
-  const id = useMemo(() => ["solar", "star", "sky", "scale", "merge"][Math.floor(Math.random() * 5)], []);
+  const id = useMemo(() => ["solar", "star", "scale", "merge", "lander", "ascent", "shield", "breaker", "docking", "wormhole"][Math.floor(Math.random() * 10)], []);
   return <ArcadeShell reward={reward} onExit={onExit} onFinish={onFinish} def={GAMES_DEF[id]} />;
 }
 

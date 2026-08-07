@@ -21,6 +21,9 @@ function discoverEntries() {
       }
     }
   }
+  // Optional internal games test page — delete src/gametest/ to deactivate it.
+  const gametest = "src/gametest/main.jsx";
+  if (existsSync(gametest)) entries["gametest/app"] = gametest;
   return entries;
 }
 
