@@ -40,36 +40,59 @@ const STR = {
   },
 };
 
-/* L = m v r constant; v = ω r ⇒ ω ∝ 1/r². */
+/* L = m v r constant; v = ω r ⇒ ω ∝ 1/r².
+   TOP-DOWN view: we look straight down the spin axis, so the skater is a
+   body disk with arms reaching out radially and a nose marker showing the
+   rotation. Arms are straight when out and fold at the elbow when pulled in. */
 function draw(ctx, cw, H, r, angle) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw / 2, cy = H / 2 + 10;
-  // ice
+  // ice, seen from above
   ctx.strokeStyle = "rgba(120,150,210,0.2)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(cx, cy, 96, 0, Math.PI * 2); ctx.stroke();
 
-  const armLen = 20 + r * 74; // r 0..1 → arm reach
-  // body
+  const armLen = 20 + r * 74; // r 0..1 → arm reach (hand distance from the axis)
+
+  // spin-rate blur ring (trail of the hands), drawn under the skater
+  ctx.strokeStyle = `rgba(99,211,240,${Math.min(0.55, 0.08 / (r * r + 0.05))})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, armLen, 0, Math.PI * 2); ctx.stroke();
+
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(angle);
-  // trunk
-  ctx.fillStyle = "#c98bff"; ctx.beginPath(); ctx.ellipse(0, 0, 12, 26, 0, 0, Math.PI * 2); ctx.fill();
-  // head
-  ctx.fillStyle = "#e7d3ff"; ctx.beginPath(); ctx.arc(0, -34, 9, 0, Math.PI * 2); ctx.fill();
-  // arms with masses at the ends
-  ctx.strokeStyle = "#c98bff"; ctx.lineWidth = 5; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(-armLen, -8); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(armLen, -8); ctx.stroke();
-  ctx.fillStyle = "#63d3f0";
-  ctx.beginPath(); ctx.arc(-armLen, -8, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(armLen, -8, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
 
-  // spin-rate blur ring
-  ctx.strokeStyle = `rgba(99,211,240,${Math.min(0.5, 0.08 / (r * r + 0.05))})`;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(cx, cy, armLen + 4, 0, Math.PI * 2); ctx.stroke();
+  // arms: two-segment (shoulder → elbow → hand) reaching out along the plane.
+  // Straight when out; as the hand is pulled in the elbow bends (angle closes)
+  // instead of the arm shortening. The hand stays at reach = armLen, so the
+  // mass's distance from the spin axis (and thus ω ∝ 1/r²) is unchanged.
+  ctx.strokeStyle = "#c98bff"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const shoulderX = 10, L1 = 42, L2 = 42; // upper arm + forearm; sum = max reach
+  const drawArm = (sign) => {
+    const sx = sign * shoulderX, sy = 0;   // shoulder (in the horizontal plane)
+    const hx = sign * armLen, hy = 0;       // hand (mass) at the reach distance
+    const D = Math.abs(hx - sx);
+    let ex, ey;
+    if (D >= L1 + L2) {                      // fully extended → straight
+      ex = sx + sign * L1; ey = 0;
+    } else {                                 // fold at the elbow (bends aside)
+      const xe = (D * D + L1 * L1 - L2 * L2) / (2 * D);
+      const ye = Math.sqrt(Math.max(0, L1 * L1 - xe * xe));
+      ex = sx + sign * xe; ey = ye;          // elbow swings to one side
+    }
+    ctx.strokeStyle = "#c98bff";
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.fillStyle = "#c98bff"; ctx.beginPath(); ctx.arc(ex, ey, 3.4, 0, Math.PI * 2); ctx.fill(); // elbow
+    ctx.fillStyle = "#63d3f0"; ctx.beginPath(); ctx.arc(hx, hy, 7, 0, Math.PI * 2); ctx.fill();   // hand mass
+  };
+  drawArm(1); drawArm(-1);
+
+  // body seen from above: shoulders/torso disk + head, drawn over the shoulders
+  ctx.fillStyle = "#c98bff"; ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#e7d3ff"; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+  // nose / facing marker so the spin is visible
+  ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(0, -13, 3.4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 export function AngularMomentum() {
