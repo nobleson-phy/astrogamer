@@ -37,6 +37,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch3/index.html",
   },
+  {
+    n: 4,
+    title: { en: "Earth, Moon, and Sky", ja: "地球・月・空" },
+    blurb: {
+      en: "Map the sky, chase the seasons and the changing Moon, keep time and the calendar, ride the tides, and catch an eclipse.",
+      ja: "空を地図化し、季節と満ち欠けを追い、時と暦を刻み、潮の満ち引きに乗り、そして食をとらえよう。",
+    },
+    href: "chapters/ch4/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };

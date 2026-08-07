@@ -17,6 +17,7 @@ The landing page lists the course chapters. Available now:
 1. **Science and the Universe** — the scale of the cosmos, how science works, light-travel time, the very small, and stardust.
 2. **Observing the Sky** — the celestial sphere, constellations & the zodiac, precession, retrograde motion, and the geocentric → heliocentric story to Galileo.
 3. **Orbits and Gravity** — Kepler's laws, Newton's laws of motion, universal gravitation, angular momentum, orbits, escape speed and gravity assists.
+4. **Earth, Moon, and Sky** — mapping the sky, the seasons, keeping time, calendars, the phases of the Moon, tides, and eclipses.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
@@ -38,9 +39,10 @@ Your score sets the stakes for a randomly chosen mini-game — **more points →
 - **15–25 pts →** 3 lives, 3 minutes
 - **< 15 pts →** 1 life, 1 minute
 
-The round ends when your lives *or* the timer run out, whichever comes first. Five games are in
-the pool: **Asteroid Defense**, **Star Catcher**, **Constellation Connect**, **Warp Run**, and
-**Merge Galaxy** (an original drop-and-merge: combine worlds up to a galaxy).
+The round ends when your lives *or* the timer run out, whichever comes first. Ten games are in
+the pool: **Asteroid Defense**, **Star Catcher**, **Warp Run**, **Merge Galaxy** (an original
+drop-and-merge: combine worlds up to a galaxy), **Lunar Lander**, **Rocket Ascent**, **Solar
+Flare Shield**, **Meteor Breaker**, **Satellite Docking**, and **Wormhole Run**.
 
 ### Bilingual
 A one-tap **EN / 日本語** switch re-renders everything — station text, quizzes, game
@@ -52,7 +54,7 @@ instructions, and UI — in either language.
 - **Offline:** open a chapter's `index.html` in any browser. No install needed.
 
 **Controls (games):** move with the on-screen **◀ ▶** buttons, arrow keys, or by dragging;
-**FIRE**/space to shoot or drop; Constellation Connect is tap-only. Works with mouse, keyboard, or touch.
+**FIRE**/space to shoot, drop, or thrust (depending on the game). Works with mouse, keyboard, or touch.
 
 ## Project layout
 
