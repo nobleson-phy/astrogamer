@@ -1,96 +1,110 @@
 # Cosmic Explorer 🪐
 
-An interactive, bilingual (English / 日本語) astronomy game for the general public.
-Explore the solar system in motion, forge a star and watch it live and die, learn the
-constellations, and zoom out to the edge of the observable universe — then test what you
-learned with quizzes, and unwind with a different arcade game after each one.
+An interactive, bilingual (English / 日本語) astronomy **course** for the general public —
+a chapter-by-chapter journey where you *explore* each topic through hands-on visualizations,
+then *prove it* with a quiz and unwind with a bonus arcade game.
+
+Each chapter is built from a real astronomy textbook (OpenStax *Astronomy 2e*): every quiz
+answer can be discovered by exploring that chapter's interactive stations first.
 
 **Live site:** https://nobleson-phy.github.io/astrogamer/
 
 ## What's inside
 
-### Four explorable realms
-- **Solar System** — a live orrery with the planets orbiting at their true relative
-  periods. Play/pause, speed up time, zoom and pan, pick any world for real data, and
-  toggle between compressed and true-to-scale distances.
-- **Star Forge** — set a star's birth mass and watch its whole life play out: protostar →
-  main sequence → its fate as a white dwarf, neutron star, or black hole. Shows spectral
-  class, temperature, and lifespan.
-- **Night Sky** — 10 constellations and asterisms (Orion, Ursa Major, Cassiopeia, Cygnus,
-  Scorpius, Leo, Taurus, Lyra, the Summer Triangle, and the Southern Cross). Reveal or hide
-  the connecting lines and tap any one for its story.
-- **Cosmic Scale** — zoom outward step by step from Earth to the observable universe, each
-  level shrinking the last to a dot.
+### A hub of chapters
+The landing page lists the course chapters. Available now:
+
+1. **Science and the Universe** — the scale of the cosmos, how science works, light-travel time, the very small, and stardust.
+2. **Observing the Sky** — the celestial sphere, constellations & the zodiac, precession, retrograde motion, and the geocentric → heliocentric story to Galileo.
+3. **Orbits and Gravity** — Kepler's laws, Newton's laws of motion, universal gravitation, angular momentum, orbits, escape speed and gravity assists.
+
+### Eight interactive "stations" per chapter
+Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
+explorer, a cosmic calendar, an eccentricity slider, a top-down angular-momentum skater, and
+so on). Stations use a consistent layout — a story panel on the left, the interactive on the
+right — and are woven together with a connecting narrative so the chapter reads as one thread.
 
 ### Knowledge Check (quizzes)
-- A quiz per topic plus a mixed **Grand Tour**, with 9–11 questions each (a shuffled subset
-  per run).
-- Instant feedback: the correct answer lights up and a one-line explanation says *why*.
-- Running score, a streak counter, and an end rating from "Ground Control" to
-  "Astronomer Royal".
-- **Learn-then-test:** every quiz answer can be found by exploring its realm first.
+- A 25-question bank per chapter (15 knowledge, 5 reasoning, 5 understanding).
+- Pick a difficulty, which draws a 6-question run:
+  - **Beginner** — 6 easy (max 30 pts)
+  - **Intermediate** — 3 easy + 3 medium (max 36 pts)
+  - **Advanced** — 2 easy + 2 medium + 2 hard (max 44 pts)
+- Points per correct answer: easy **5**, medium **7**, hard **10**. Instant feedback with a one-line explanation.
 
 ### A bonus game after each quiz
-Each section rewards you with its own mini-game (Grand Tour picks one at random):
-- **Solar System → Asteroid Defense** (shoot the falling rocks)
-- **Star Forge → Star Catcher** (catch hydrogen, dodge rocks)
-- **Night Sky → Constellation Connect** (tap the stars in order, against the clock)
-- **Cosmic Scale → Warp Run** (fly outward and survive)
+Your score sets the stakes for a randomly chosen mini-game — **more points → more lives and a longer round**:
+- **> 25 pts →** 5 lives, 5 minutes
+- **15–25 pts →** 3 lives, 3 minutes
+- **< 15 pts →** 1 life, 1 minute
 
-Every game opens with a **How to play** card (goal, controls, what to avoid, shields), and
-your quiz performance sets the stakes: **each wrong answer removes a starting shield and
-nudges the difficulty up.** A perfect quiz means full shields and a calmer round.
+The round ends when your lives *or* the timer run out, whichever comes first. Five games are in
+the pool: **Asteroid Defense**, **Star Catcher**, **Constellation Connect**, **Warp Run**, and
+**Merge Galaxy** (an original drop-and-merge: combine worlds up to a galaxy).
 
 ### Bilingual
-A one-tap **EN / 日本語** switch in the header re-renders everything — facts, quizzes,
-game instructions, and UI — in either language.
+A one-tap **EN / 日本語** switch re-renders everything — station text, quizzes, game
+instructions, and UI — in either language.
 
 ## Play it
 
-- **Online:** visit the live link above.
-- **Offline:** open `index.html` in any web browser (double-click it). No install needed.
+- **Online:** visit the live link above, pick a chapter, and start exploring.
+- **Offline:** open a chapter's `index.html` in any browser. No install needed.
 
-**Controls (games):** move with the on-screen **◀ ▶** buttons, the arrow keys, or by
-dragging; fire with the **FIRE** button or space where relevant; Constellation Connect is
-tap-only. Everything works with mouse, keyboard, or touch.
+**Controls (games):** move with the on-screen **◀ ▶** buttons, arrow keys, or by dragging;
+**FIRE**/space to shoot or drop; Constellation Connect is tap-only. Works with mouse, keyboard, or touch.
 
 ## Project layout
 
 ```
 astrogamer/
-├── index.html   ← the page GitHub Pages serves (loads app.js)
-├── app.js       ← the compiled game (React bundled in) — this is the deployed build
+├── index.html              ← the hub (landing page); GitHub Pages serves this
+├── app.js                  ← compiled hub bundle
+├── chapters/
+│   ├── ch1/ (index.html + app.js)
+│   ├── ch2/ (index.html + app.js)
+│   └── ch3/ (index.html + app.js)   ← each chapter is its own page + bundle
 ├── src/
-│   ├── CosmicExplorer.jsx  ← the full game source (edit this)
-│   └── main.jsx            ← entry point that mounts the app
-├── build.mjs    ← build script (esbuild)
+│   ├── hub/                ← the landing page
+│   ├── shared/             ← the reusable engine: theme, i18n, styles, Quiz, arcade (games),
+│   │                          and the interactive components library
+│   └── chapters/
+│       ├── ch1/ (Chapter1.jsx, questions.js, stations/…)
+│       ├── ch2/ …
+│       └── ch3/ …
+├── build.mjs               ← multi-entry esbuild (auto-discovers src/chapters/*)
 ├── package.json
+├── test/                   ← the original single-page pilot, preserved (served at /test/)
 └── README.md
 ```
 
 ## Editing & rebuilding
 
-You only need this if you want to change the game. It requires [Node.js](https://nodejs.org) (the free LTS version).
+Requires [Node.js](https://nodejs.org) (the free LTS version).
 
 ```bash
 npm install          # once, to get React + esbuild
-npm run build        # rebuild app.js after editing src/CosmicExplorer.jsx
-npm run dev          # optional: live-reload dev server at http://localhost:8000
+npm run build        # rebuild the hub + every chapter bundle
+npm run dev          # optional: live-reload dev server
 ```
 
-After `npm run build`, commit the updated `app.js` and push — GitHub Pages redeploys automatically.
+**Adding a chapter:** create `src/chapters/chN/` (a `Chapter N.jsx`, a `questions.js`, and a
+`stations/` folder), add a `chapters/chN/index.html`, and append one entry to the `CHAPTERS`
+array in `src/hub/Hub.jsx`. The build discovers the new chapter automatically.
+
+After `npm run build`, commit the updated bundles and push — GitHub Pages redeploys automatically.
 
 ## How it's hosted
 
-Served as static files by **GitHub Pages** (Settings → Pages → deploy from `main`, root
-folder). Nothing runs on a server; the whole game is bundled into `app.js`. The only
-runtime request is to Google Fonts, which degrades gracefully to system fonts if unavailable.
+Served as static files by **GitHub Pages** (deploy from `main`, root folder). Nothing runs on
+a server; each page is a self-contained bundle. The only runtime request is to Google Fonts,
+which degrades gracefully to system fonts if unavailable. The original pilot game remains
+available at **`/test/`**.
 
 ## Notes
 
-- Every fact in the game is real; the visuals are scaled for clarity, not to true scale.
-- Constellation star positions are simplified so each shape is easy to learn.
-- Planet moon counts are current as of early 2026 and labelled "known" — astronomers keep finding more.
+- Every fact in the course is real; visuals are scaled for clarity, not to true scale.
+- Question banks and source chapters live under `Chapters/` (outside the built site).
 - The Japanese translations use standard astronomy terms but would benefit from a native-speaker review before classroom use.
 
-Built with React (© Meta, MIT-licensed).
+Built with React (© Meta, MIT-licensed). Course content adapted from OpenStax *Astronomy 2e* (CC BY 4.0).
