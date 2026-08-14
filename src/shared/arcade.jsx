@@ -124,7 +124,7 @@ function drawOrb(ctx, x, y, r, color) {
 /* ---------- the games ---------- */
 export const GAMES_DEF = {
   solar: {
-    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more. Survive to catch weapon jewels: at 1:00 a twin-shot jewel drops, at 2:00 a triple-spread jewel.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。生き延びて武器ジュエルを取ろう：1分でツインショット、2分で三方向ショットのジュエルが落ちてくる。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
+    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more. Survive to catch weapon jewels: at 1:00 a twin-shot jewel drops, at 2:00 a triple-spread jewel.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。生き延びて武器ジュエルを取ろう：1分でツインショット、2分で三方向ショットのジュエルが落ちてくる。" }, avoid: { en: "A rock that strikes your ship costs a life — dodge it or shoot it down. Rocks that slip past the bottom are harmless.", ja: "自機に岩が当たるとライフを1つ失う——よけるか撃ち落とそう。下まで抜けた岩は無害です。" }, pad: "lrf" },
     init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.jewels = []; g.cd = 0; g.spawn = 0.5; g.weapon = 0; g.jw1 = false; g.jw2 = false; g.wflash = 0; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 330;
@@ -161,7 +161,7 @@ export const GAMES_DEF = {
       }
       g.jewels = g.jewels.filter((j) => !j.dead);
       for (const r of g.rocks) { if (r.dead) continue; for (const b of g.bullets) { if (b.dead) continue; if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 3) { b.dead = true; r.dead = true; g.score += Math.round(r.r); spawnParts(g, r.x, r.y, r.r, "#ffcf6b"); break; } } }
-      for (const r of g.rocks) { if (r.dead) continue; if (r.y - r.r > H) { r.dead = true; lose(g, over); } else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); lose(g, over); } }
+      for (const r of g.rocks) { if (r.dead) continue; if (r.y - r.r > H) { r.dead = true; } else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); lose(g, over); } }
       g.rocks = g.rocks.filter((r) => !r.dead); g.bullets = g.bullets.filter((b) => !b.dead);
       drawBg(ctx, g, W, H);
       for (const r of g.rocks) drawRock(ctx, r);
