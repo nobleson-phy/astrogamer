@@ -46,6 +46,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch4/index.html",
   },
+  {
+    n: 5,
+    title: { en: "Radiation and Spectra", ja: "放射とスペクトル" },
+    blurb: {
+      en: "Decode starlight itself — waves and photons, the electromagnetic spectrum, the colours of heat, the prism, the atom's fingerprints, and the Doppler shift that reveals a star's motion.",
+      ja: "星の光そのものを読み解こう——波と光子、電磁スペクトル、熱の色、プリズム、原子の指紋、そして星の運動を明かすドップラー効果。",
+    },
+    href: "chapters/ch5/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
