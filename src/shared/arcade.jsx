@@ -82,6 +82,20 @@ function drawShip(ctx, x, y) {
   ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(x, y - 16); ctx.lineTo(x - 12, y + 12); ctx.lineTo(x + 12, y + 12); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 4, y + 12); ctx.lineTo(x, y + 18 + Math.random() * 6); ctx.closePath(); ctx.fill();
 }
+/* power-up jewel: kind 1 = twin shot (green), kind 2 = triple spread (violet) */
+function drawJewel(ctx, x, y, kind, t) {
+  const col = kind === 2 ? "#c98bff" : "#3fe89b";
+  const pulse = 1 + Math.sin(t * 6) * 0.12;
+  const s = (kind === 2 ? 11 : 9) * pulse;
+  const glow = ctx.createRadialGradient(x, y, 1, x, y, s * 2.4);
+  glow.addColorStop(0, col); glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, s * 2.4, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = col; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
+  ctx.fillRect(-s * 0.62, -s * 0.62, s * 1.24, s * 1.24); ctx.strokeRect(-s * 0.62, -s * 0.62, s * 1.24, s * 1.24);
+  ctx.restore();
+  if (kind === 2) { ctx.fillStyle = "#fff"; for (const dx of [-4, 0, 4]) { ctx.beginPath(); ctx.arc(x + dx, y, 1.3, 0, Math.PI * 2); ctx.fill(); } }
+}
 
 
 /* --- Merge Galaxy helpers --- */
@@ -110,29 +124,52 @@ function drawOrb(ctx, x, y, r, color) {
 /* ---------- the games ---------- */
 export const GAMES_DEF = {
   solar: {
-    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
-    init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.cd = 0; g.spawn = 0.5; g.bg = makeStars(api.W, api.H, 60); },
+    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more. Survive to catch weapon jewels: at 1:00 a twin-shot jewel drops, at 2:00 a triple-spread jewel.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。生き延びて武器ジュエルを取ろう：1分でツインショット、2分で三方向ショットのジュエルが落ちてくる。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
+    init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.jewels = []; g.cd = 0; g.spawn = 0.5; g.weapon = 0; g.jw1 = false; g.jw2 = false; g.wflash = 0; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 330;
       if (keys.left) g.shipX -= spd * dt;
       if (keys.right) g.shipX += spd * dt;
       if (g.pdown && g.px != null) g.shipX += clamp(g.px - g.shipX, -spd * dt, spd * dt);
       g.shipX = clamp(g.shipX, 18, W - 18);
-      g.cd -= dt;
-      if ((keys.fire || g.pdown) && g.cd <= 0) { g.bullets.push({ x: g.shipX, y: H - 42 }); g.cd = 0.2; }
-      for (const b of g.bullets) b.y -= 540 * dt;
-      g.bullets = g.bullets.filter((b) => b.y > -12 && !b.dead);
+      g.cd -= dt; if (g.wflash > 0) g.wflash -= dt;
+      // fire — pattern depends on the weapon jewels collected
+      if ((keys.fire || g.pdown) && g.cd <= 0) {
+        const bx = g.shipX, by = H - 42, V = 540;
+        if (g.weapon >= 2) {
+          for (const deg of [-15, 0, 15]) { const a = (deg * Math.PI) / 180; g.bullets.push({ x: bx, y: by, vx: Math.sin(a) * V, vy: -Math.cos(a) * V }); }
+        } else if (g.weapon === 1) {
+          g.bullets.push({ x: bx - 7, y: by, vx: 0, vy: -V }); g.bullets.push({ x: bx + 7, y: by, vx: 0, vy: -V });
+        } else {
+          g.bullets.push({ x: bx, y: by, vx: 0, vy: -V });
+        }
+        g.cd = 0.2;
+      }
+      for (const b of g.bullets) { b.x += b.vx * dt; b.y += b.vy * dt; }
+      g.bullets = g.bullets.filter((b) => b.y > -12 && b.x > -14 && b.x < W + 14 && !b.dead);
       g.spawn -= dt; const iv = Math.max(0.32, 0.95 / diff - g.t * 0.008);
       if (g.spawn <= 0) { const s = 13 + Math.random() * 22; g.rocks.push({ x: s + Math.random() * (W - s * 2), y: -s, r: s, vy: (34 + Math.random() * 26) * diff * (1 + g.t * 0.02), vx: (Math.random() - 0.5) * 26, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 2, verts: makeRockVerts() }); g.spawn = iv; }
       for (const r of g.rocks) { r.y += r.vy * dt; r.x += r.vx * dt; r.spin += r.vspin * dt; if (r.x < r.r || r.x > W - r.r) r.vx *= -1; }
+      // weapon jewels: twin-shot at 1:00, triple-spread at 2:00 (each drops once)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 66, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 66, kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        j.y += j.vy * dt;
+        if (Math.hypot(j.x - g.shipX, j.y - (H - 30)) < 24) { j.dead = true; g.weapon = Math.max(g.weapon, j.kind); g.wflash = 0.6; g.score += 20; spawnParts(g, j.x, j.y, 16, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+        else if (j.y > H + 20) j.dead = true;
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       for (const r of g.rocks) { if (r.dead) continue; for (const b of g.bullets) { if (b.dead) continue; if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 3) { b.dead = true; r.dead = true; g.score += Math.round(r.r); spawnParts(g, r.x, r.y, r.r, "#ffcf6b"); break; } } }
       for (const r of g.rocks) { if (r.dead) continue; if (r.y - r.r > H) { r.dead = true; lose(g, over); } else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); lose(g, over); } }
       g.rocks = g.rocks.filter((r) => !r.dead); g.bullets = g.bullets.filter((b) => !b.dead);
       drawBg(ctx, g, W, H);
       for (const r of g.rocks) drawRock(ctx, r);
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       ctx.strokeStyle = C.cool; ctx.lineWidth = 2.5;
-      for (const b of g.bullets) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y + 10); ctx.stroke(); }
+      for (const b of g.bullets) { const m = Math.hypot(b.vx, b.vy) || 1; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - (b.vx / m) * 10, b.y - (b.vy / m) * 10); ctx.stroke(); }
       drawShip(ctx, g.shipX, H - 30);
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.weapon === 2 ? "#c98bff" : "#3fe89b"; ctx.beginPath(); ctx.arc(g.shipX, H - 30, 30, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
   star: {
