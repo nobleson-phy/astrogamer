@@ -167,8 +167,8 @@ function drawPendulum(ctx, w, h, t) {
   ctx.lineTo(cx + R * Math.cos(planeAng), cy + R * Math.sin(planeAng));
   ctx.stroke();
 
-  // swinging bob along the line
-  const swing = Math.sin(t * 0.12) * R * 0.85;
+  // swinging bob along the line (swing rate reduced 25%: 0.12 → 0.09)
+  const swing = Math.sin(t * 0.09) * R * 0.85;
   const bx = cx + swing * Math.cos(planeAng);
   const by = cy + swing * Math.sin(planeAng);
   ctx.strokeStyle = "rgba(255,207,107,0.5)"; ctx.lineWidth = 1;
