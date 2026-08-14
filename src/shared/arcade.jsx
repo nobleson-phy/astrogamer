@@ -82,6 +82,20 @@ function drawShip(ctx, x, y) {
   ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(x, y - 16); ctx.lineTo(x - 12, y + 12); ctx.lineTo(x + 12, y + 12); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(x - 4, y + 12); ctx.lineTo(x + 4, y + 12); ctx.lineTo(x, y + 18 + Math.random() * 6); ctx.closePath(); ctx.fill();
 }
+/* power-up jewel: kind 1 = twin shot (green), kind 2 = triple spread (violet) */
+function drawJewel(ctx, x, y, kind, t) {
+  const col = kind === 2 ? "#c98bff" : "#3fe89b";
+  const pulse = 1 + Math.sin(t * 6) * 0.12;
+  const s = (kind === 2 ? 11 : 9) * pulse;
+  const glow = ctx.createRadialGradient(x, y, 1, x, y, s * 2.4);
+  glow.addColorStop(0, col); glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, s * 2.4, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = col; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
+  ctx.fillRect(-s * 0.62, -s * 0.62, s * 1.24, s * 1.24); ctx.strokeRect(-s * 0.62, -s * 0.62, s * 1.24, s * 1.24);
+  ctx.restore();
+  if (kind === 2) { ctx.fillStyle = "#fff"; for (const dx of [-4, 0, 4]) { ctx.beginPath(); ctx.arc(x + dx, y, 1.3, 0, Math.PI * 2); ctx.fill(); } }
+}
 
 
 /* --- Merge Galaxy helpers --- */
@@ -110,46 +124,81 @@ function drawOrb(ctx, x, y, r, color) {
 /* ---------- the games ---------- */
 export const GAMES_DEF = {
   solar: {
-    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
-    init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.cd = 0; g.spawn = 0.5; g.bg = makeStars(api.W, api.H, 60); },
+    meta: { title: { en: "Asteroid Defense", ja: "小惑星ディフェンス" }, goal: { en: "Shoot the falling asteroids to score — bigger rocks are worth more. Survive to catch weapon jewels: at 1:00 a twin-shot jewel drops, at 2:00 a triple-spread jewel.", ja: "落ちてくる小惑星を撃って得点——大きい岩ほど高得点。生き延びて武器ジュエルを取ろう：1分でツインショット、2分で三方向ショットのジュエルが落ちてくる。" }, avoid: { en: "Don't let a rock reach the bottom or hit your ship — it costs a life.", ja: "岩を最下部まで落とすか自機に当てるとライフを1つ失う。" }, pad: "lrf" },
+    init: (g, api) => { g.shipX = api.W / 2; g.bullets = []; g.rocks = []; g.jewels = []; g.cd = 0; g.spawn = 0.5; g.weapon = 0; g.jw1 = false; g.jw2 = false; g.wflash = 0; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 330;
       if (keys.left) g.shipX -= spd * dt;
       if (keys.right) g.shipX += spd * dt;
       if (g.pdown && g.px != null) g.shipX += clamp(g.px - g.shipX, -spd * dt, spd * dt);
       g.shipX = clamp(g.shipX, 18, W - 18);
-      g.cd -= dt;
-      if ((keys.fire || g.pdown) && g.cd <= 0) { g.bullets.push({ x: g.shipX, y: H - 42 }); g.cd = 0.2; }
-      for (const b of g.bullets) b.y -= 540 * dt;
-      g.bullets = g.bullets.filter((b) => b.y > -12 && !b.dead);
+      g.cd -= dt; if (g.wflash > 0) g.wflash -= dt;
+      // fire — pattern depends on the weapon jewels collected
+      if ((keys.fire || g.pdown) && g.cd <= 0) {
+        const bx = g.shipX, by = H - 42, V = 540;
+        if (g.weapon >= 2) {
+          for (const deg of [-15, 0, 15]) { const a = (deg * Math.PI) / 180; g.bullets.push({ x: bx, y: by, vx: Math.sin(a) * V, vy: -Math.cos(a) * V }); }
+        } else if (g.weapon === 1) {
+          g.bullets.push({ x: bx - 7, y: by, vx: 0, vy: -V }); g.bullets.push({ x: bx + 7, y: by, vx: 0, vy: -V });
+        } else {
+          g.bullets.push({ x: bx, y: by, vx: 0, vy: -V });
+        }
+        g.cd = 0.2;
+      }
+      for (const b of g.bullets) { b.x += b.vx * dt; b.y += b.vy * dt; }
+      g.bullets = g.bullets.filter((b) => b.y > -12 && b.x > -14 && b.x < W + 14 && !b.dead);
       g.spawn -= dt; const iv = Math.max(0.32, 0.95 / diff - g.t * 0.008);
       if (g.spawn <= 0) { const s = 13 + Math.random() * 22; g.rocks.push({ x: s + Math.random() * (W - s * 2), y: -s, r: s, vy: (34 + Math.random() * 26) * diff * (1 + g.t * 0.02), vx: (Math.random() - 0.5) * 26, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 2, verts: makeRockVerts() }); g.spawn = iv; }
       for (const r of g.rocks) { r.y += r.vy * dt; r.x += r.vx * dt; r.spin += r.vspin * dt; if (r.x < r.r || r.x > W - r.r) r.vx *= -1; }
+      // weapon jewels: twin-shot at 1:00, triple-spread at 2:00 (each drops once)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 66, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 66, kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        j.y += j.vy * dt;
+        if (Math.hypot(j.x - g.shipX, j.y - (H - 30)) < 24) { j.dead = true; g.weapon = Math.max(g.weapon, j.kind); g.wflash = 0.6; g.score += 20; spawnParts(g, j.x, j.y, 16, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+        else if (j.y > H + 20) j.dead = true;
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       for (const r of g.rocks) { if (r.dead) continue; for (const b of g.bullets) { if (b.dead) continue; if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 3) { b.dead = true; r.dead = true; g.score += Math.round(r.r); spawnParts(g, r.x, r.y, r.r, "#ffcf6b"); break; } } }
       for (const r of g.rocks) { if (r.dead) continue; if (r.y - r.r > H) { r.dead = true; lose(g, over); } else if (Math.hypot(r.x - g.shipX, r.y - (H - 30)) < r.r + 12) { r.dead = true; spawnParts(g, r.x, r.y, r.r, "#ff7a6b"); lose(g, over); } }
       g.rocks = g.rocks.filter((r) => !r.dead); g.bullets = g.bullets.filter((b) => !b.dead);
       drawBg(ctx, g, W, H);
       for (const r of g.rocks) drawRock(ctx, r);
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       ctx.strokeStyle = C.cool; ctx.lineWidth = 2.5;
-      for (const b of g.bullets) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x, b.y + 10); ctx.stroke(); }
+      for (const b of g.bullets) { const m = Math.hypot(b.vx, b.vy) || 1; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - (b.vx / m) * 10, b.y - (b.vy / m) * 10); ctx.stroke(); }
       drawShip(ctx, g.shipX, H - 30);
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.weapon === 2 ? "#c98bff" : "#3fe89b"; ctx.beginPath(); ctx.arc(g.shipX, H - 30, 30, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
   star: {
-    meta: { title: { en: "Star Catcher", ja: "スターキャッチャー" }, goal: { en: "Catch the glowing hydrogen orbs — each one scores points.", ja: "光る水素の玉をキャッチ——1個ごとに得点。" }, avoid: { en: "Catching a dark rock costs a life, so steer around them.", ja: "暗い岩をキャッチするとライフを失うので、よけて進もう。" }, pad: "lr" },
-    init: (g, api) => { g.x = api.W / 2; g.items = []; g.spawn = 0.4; g.bg = makeStars(api.W, api.H, 60); },
+    meta: { title: { en: "Star Catcher", ja: "スターキャッチャー" }, goal: { en: "Catch the glowing hydrogen orbs — each one scores points. Survive to catch power gems: 1:00 widens your basket, 2:00 pulls orbs in.", ja: "光る水素の玉をキャッチ——1個ごとに得点。生き延びてパワージェムを取ろう：1分でバスケットが広がり、2分で玉を引き寄せる。" }, avoid: { en: "Catching a dark rock costs a life, so steer around them.", ja: "暗い岩をキャッチするとライフを失うので、よけて進もう。" }, pad: "lr" },
+    init: (g, api) => { g.x = api.W / 2; g.items = []; g.spawn = 0.4; g.power = 0; g.jw1 = false; g.jw2 = false; g.jewels = []; g.wflash = 0; g.bg = makeStars(api.W, api.H, 60); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 340, cy = H - 26;
       if (keys.left) g.x -= spd * dt;
       if (keys.right) g.x += spd * dt;
       if (g.pdown && g.px != null) g.x += clamp(g.px - g.x, -spd * dt, spd * dt);
       g.x = clamp(g.x, 26, W - 26);
+      const catchHalf = g.power >= 1 ? 45 : 30;
+      if (g.wflash > 0) g.wflash -= dt;
+      // power gems: wider basket at 1:00, magnet at 2:00 (each drops once)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -14, vy: 96, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -14, vy: 96, kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        j.y += j.vy * dt;
+        if (j.y > cy - 12 && j.y < cy + 16 && Math.abs(j.x - g.x) < catchHalf) { j.dead = true; g.power = Math.max(g.power, j.kind); g.wflash = 0.6; g.score += 10; spawnParts(g, j.x, j.y, 14, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+        else if (j.y > H + 20) j.dead = true;
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       g.spawn -= dt; const iv = Math.max(0.28, 0.7 / diff - g.t * 0.006);
       if (g.spawn <= 0) { const bad = Math.random() < 0.32; g.items.push({ x: 22 + Math.random() * (W - 44), y: -14, r: bad ? 12 + Math.random() * 8 : 8, vy: (90 + Math.random() * 60) * diff * (1 + g.t * 0.015), bad, verts: bad ? makeRockVerts() : null }); g.spawn = iv; }
-      for (const it of g.items) it.y += it.vy * dt;
+      for (const it of g.items) { it.y += it.vy * dt; if (g.power >= 2 && !it.bad) { const d = g.x - it.x; if (Math.abs(d) < 120) it.x += Math.sign(d) * Math.min(Math.abs(d), 90 * dt); } }
       for (const it of g.items) {
         if (it.hit) continue;
-        if (it.y > cy - 12 && it.y < cy + 16 && Math.abs(it.x - g.x) < 30) { it.hit = true; if (it.bad) { spawnParts(g, it.x, it.y, it.r, "#ff7a6b"); lose(g, over); } else { g.score += 5; spawnParts(g, it.x, it.y, it.r, "#ffcf6b"); } }
+        if (it.y > cy - 12 && it.y < cy + 16 && Math.abs(it.x - g.x) < catchHalf) { it.hit = true; if (it.bad) { spawnParts(g, it.x, it.y, it.r, "#ff7a6b"); lose(g, over); } else { g.score += 5; spawnParts(g, it.x, it.y, it.r, "#ffcf6b"); } }
         else if (it.y > H + 20) it.hit = true;
       }
       g.items = g.items.filter((it) => !it.hit);
@@ -158,39 +207,57 @@ export const GAMES_DEF = {
         if (it.bad) drawRock(ctx, { x: it.x, y: it.y, r: it.r, spin: g.t * 2, verts: it.verts });
         else { const gr = ctx.createRadialGradient(it.x, it.y, 0, it.x, it.y, it.r * 2); gr.addColorStop(0, "#ffe08a"); gr.addColorStop(1, "rgba(255,207,107,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(it.x, it.y, it.r * 2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#fff4d6"; ctx.beginPath(); ctx.arc(it.x, it.y, it.r, 0, Math.PI * 2); ctx.fill(); }
       }
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       const glow = ctx.createRadialGradient(g.x, cy, 2, g.x, cy, 26); glow.addColorStop(0, "rgba(99,211,240,0.4)"); glow.addColorStop(1, "rgba(99,211,240,0)");
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.x, cy, 26, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = C.cool; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, cy + 4, 22, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      const br = g.power >= 1 ? 33 : 22;
+      ctx.strokeStyle = C.cool; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x, cy + 4, br, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.power === 2 ? "#c98bff" : "#3fe89b"; ctx.beginPath(); ctx.arc(g.x, cy, 30, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
   scale: {
-    meta: { title: { en: "Warp Run", ja: "ワープラン" }, goal: { en: "Fly outward and survive — your score climbs the longer you last.", ja: "宇宙の彼方へ。長く生き延びるほどスコアが伸びる。" }, avoid: { en: "Everything is an obstacle. One collision costs a life, and it keeps speeding up.", ja: "すべてが障害物。1回ぶつかるとライフを失い、速度はどんどん上がる。" }, pad: "lr" },
-    init: (g, api) => { g.x = api.W / 2; g.obs = []; g.spawn = 0.5; g.bg = Array.from({ length: 80 }, () => ({ x: Math.random() * api.W, y: Math.random() * api.H, len: 4 + Math.random() * 10, sp: 200 + Math.random() * 300 })); },
+    meta: { title: { en: "Warp Run", ja: "ワープラン" }, goal: { en: "Fly outward and survive — your score climbs the longer you last. Catch power gems: 1:00 grants a shield, 2:00 auto-recharges it.", ja: "宇宙の彼方へ。長く生き延びるほどスコアが伸びる。パワージェムで生き延びよう：1分でシールド、2分で自動リチャージ。" }, avoid: { en: "Everything is an obstacle. One collision costs a life, and it keeps speeding up.", ja: "すべてが障害物。1回ぶつかるとライフを失い、速度はどんどん上がる。" }, pad: "lr" },
+    init: (g, api) => { g.x = api.W / 2; g.obs = []; g.spawn = 0.5; g.shield = 0; g.recharge = false; g.rt = 0; g.jw1 = false; g.jw2 = false; g.jewels = []; g.wflash = 0; g.bg = Array.from({ length: 80 }, () => ({ x: Math.random() * api.W, y: Math.random() * api.H, len: 4 + Math.random() * 10, sp: 200 + Math.random() * 300 })); },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys, diff } = api, spd = 360, ramp = 1 + g.t * 0.05;
       if (keys.left) g.x -= spd * dt;
       if (keys.right) g.x += spd * dt;
       if (g.pdown && g.px != null) g.x += clamp(g.px - g.x, -spd * dt, spd * dt);
       g.x = clamp(g.x, 18, W - 18);
+      if (g.wflash > 0) g.wflash -= dt;
+      if (g.recharge && g.shield < 1) { g.rt += dt; if (g.rt >= 12) { g.shield = 1; g.rt = 0; g.wflash = 0.6; } }
+      // power gems: shield at 1:00, auto-recharge at 2:00 (each drops once)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 150, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: -16, vy: 150, kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        j.y += j.vy * dt;
+        if (Math.hypot(j.x - g.x, j.y - (H - 30)) < 11 + 12) { j.dead = true; if (j.kind === 1) g.shield = Math.max(g.shield, 1); else g.recharge = true; g.wflash = 0.6; g.score += 10; spawnParts(g, j.x, j.y, 14, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+        else if (j.y > H + 20) j.dead = true;
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       g.spawn -= dt; const iv = Math.max(0.26, 0.7 / diff - g.t * 0.01);
       if (g.spawn <= 0) { const s = 12 + Math.random() * 20; g.obs.push({ x: s + Math.random() * (W - 2 * s), y: -s, r: s, vy: (150 + Math.random() * 80) * diff * ramp, spin: Math.random() * 6, vspin: (Math.random() - 0.5) * 3, verts: makeRockVerts() }); g.spawn = iv; }
       for (const o of g.obs) { o.y += o.vy * dt; o.spin += o.vspin * dt; }
-      for (const o of g.obs) { if (o.dead) continue; if (Math.hypot(o.x - g.x, o.y - (H - 30)) < o.r + 11) { o.dead = true; spawnParts(g, o.x, o.y, o.r, "#ff7a6b"); lose(g, over); } else if (o.y - o.r > H) o.dead = true; }
+      for (const o of g.obs) { if (o.dead) continue; if (Math.hypot(o.x - g.x, o.y - (H - 30)) < o.r + 11) { o.dead = true; if (g.shield > 0) { g.shield--; g.wflash = 0.6; spawnParts(g, o.x, o.y, o.r, "#3fddff"); } else { spawnParts(g, o.x, o.y, o.r, "#ff7a6b"); lose(g, over); } } else if (o.y - o.r > H) o.dead = true; }
       g.obs = g.obs.filter((o) => !o.dead);
       g.score = Math.floor(g.t * 12);
       ctx.fillStyle = "#050810"; ctx.fillRect(0, 0, W, H);
       ctx.strokeStyle = "rgba(150,180,235,0.5)"; ctx.lineWidth = 1.5;
       for (const s of g.bg) { s.y += s.sp * ramp * dt; if (s.y > H) { s.y = -s.len; s.x = Math.random() * W; } ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + s.len * ramp); ctx.stroke(); }
       for (const o of g.obs) drawRock(ctx, o);
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       drawShip(ctx, g.x, H - 30);
+      if (g.shield > 0) { ctx.strokeStyle = "rgba(63,221,255,0.8)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(g.x, H - 30, 22, 0, Math.PI * 2); ctx.stroke(); }
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = "#3fddff"; ctx.beginPath(); ctx.arc(g.x, H - 30, 28, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
   merge: {
     meta: {
       title: { en: "Merge Galaxy", ja: "マージ・ギャラクシー" },
       goal: {
-        en: "Drop worlds into the well — two of the same merge into the next: asteroid → comet → moon → planet → gas giant → star → galaxy. Bigger merges score more.",
-        ja: "天体を井戸に落とそう——同じもの2つが次の天体に合体：小惑星→彗星→月→惑星→ガス惑星→恒星→銀河。大きい合体ほど高得点。",
+        en: "Drop worlds into the well — two of the same merge into the next: asteroid → comet → moon → planet → gas giant → star → galaxy. Bigger merges score more. Survive for boosts: 1:00 raises the danger line, 2:00 extends overflow grace.",
+        ja: "天体を井戸に落とそう——同じもの2つが次の天体に合体：小惑星→彗星→月→惑星→ガス惑星→恒星→銀河。大きい合体ほど高得点。生き延びて強化：1分で危険ラインが上がり、2分であふれ猶予が延びる。",
       },
       avoid: {
         en: "Don't let the pile stack up over the top line — each overflow costs a life.",
@@ -212,10 +279,17 @@ export const GAMES_DEF = {
       g.curX = api.W / 2;
       g.cd = 0;
       g.overflowT = 0;
+      g.overflowLimit = 2;
+      g.jw1 = false; g.jw2 = false; g.wflash = 0; g.buffLabel = ""; g.buffT = 0;
     },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys } = api, spd = 330, T = MERGE_TIERS, P = MERGE_POINTS;
       const curR = T[g.curTier].r;
+      if (g.wflash > 0) g.wflash -= dt;
+      if (g.buffT > 0) g.buffT -= dt;
+      // auto-granted boosts: raise danger line at 1:00, longer overflow grace at 2:00
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.dangerY = 52; g.wflash = 0.6; g.buffLabel = "HEADROOM +"; g.buffT = 2.2; }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.overflowLimit = 3.5; g.wflash = 0.6; g.buffLabel = "GRACE +"; g.buffT = 2.2; }
       if (keys.left) g.curX -= spd * dt;
       if (keys.right) g.curX += spd * dt;
       if (g.pdown && g.px != null) g.curX += clamp(g.px - g.curX, -spd * dt, spd * dt);
@@ -290,7 +364,7 @@ export const GAMES_DEF = {
         if (Math.abs(b.vy) < 22 && Math.abs(b.vx) < 22 && b.y - b.r < g.dangerY) { topOver = true; break; }
       }
       g.overflowT = topOver ? g.overflowT + dt : 0;
-      if (g.overflowT >= 2) {
+      if (g.overflowT >= g.overflowLimit) {
         lose(g, over);
         g.bodies.sort((a, b) => (a.y - a.r) - (b.y - b.r));
         g.bodies.splice(0, Math.min(3, g.bodies.length));
@@ -314,6 +388,8 @@ export const GAMES_DEF = {
       ctx.fillStyle = C.faint; ctx.font = `700 10px ${mono}`; ctx.textAlign = "center";
       ctx.fillText("NEXT", px, py - 18);
       drawOrb(ctx, px, py, pr, T[g.nextTier].color);
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.35; ctx.fillStyle = "#3fe89b"; ctx.fillRect(g.wellX0, 0, g.wellW, H); ctx.restore(); }
+      if (g.buffT > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, g.buffT); ctx.fillStyle = "#3fe89b"; ctx.font = `700 16px ${mono}`; ctx.textAlign = "center"; ctx.fillText(g.buffLabel, W / 2, H / 2); ctx.restore(); }
       ctx.textAlign = "left";
     },
   },
@@ -321,7 +397,7 @@ export const GAMES_DEF = {
   lander: {
     meta: {
       title: { en: "Lunar Lander", ja: "月着陸船" },
-      goal: { en: "Ease the lander down onto the flat pad — touch down slow and level to score a bonus.", ja: "着陸船を平らなパッドにそっと降ろそう——ゆっくり水平に着地するとボーナス得点。" },
+      goal: { en: "Ease the lander down onto the flat pad — touch down slow and level to score a bonus. Fly into power gems: 1:00 boosts side thrusters, 2:00 softens gravity.", ja: "着陸船を平らなパッドにそっと降ろそう——ゆっくり水平に着地するとボーナス得点。パワージェムに触れよう：1分で横噴射が強化、2分で重力が弱まる。" },
       avoid: { en: "Coming in too fast or missing the pad crashes the lander and costs a life.", ja: "速すぎたりパッドを外すと墜落してライフを1つ失う。" },
       pad: "lrf",
     },
@@ -331,9 +407,10 @@ export const GAMES_DEF = {
       g.padW = 120;
       g.x = api.W / 2; g.y = 66; g.vx = 0; g.vy = 0;
       g.padX = 40 + Math.random() * (api.W - 80 - g.padW);
+      g.power = 0; g.jw1 = false; g.jw2 = false; g.jewels = []; g.wflash = 0;
     },
     step: (g, ctx, dt, api, over) => {
-      const { W, keys } = api, GRAV = 30, side = 72, main = 96, maxV = 190, lr = 13;
+      const { W, keys } = api, side = g.power >= 1 ? 104 : 72, GRAV = g.power >= 2 ? 22 : 30, main = 96, maxV = 190, lr = 13;
       const thrust = keys.fire || g.pdown;
       if (keys.left) g.vx -= side * dt;
       if (keys.right) g.vx += side * dt;
@@ -344,6 +421,15 @@ export const GAMES_DEF = {
       if (g.x < 12) { g.x = 12; g.vx = 0; }
       if (g.x > W - 12) { g.x = W - 12; g.vx = 0; }
       if (g.y < 20) { g.y = 20; if (g.vy < 0) g.vy = 0; }
+      if (g.wflash > 0) g.wflash -= dt;
+      // power gems float in the sky: catch by flying into them
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 40 + Math.random() * (W - 80), y: 60 + Math.random() * 50, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 40 + Math.random() * (W - 80), y: 60 + Math.random() * 50, kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        if (Math.hypot(g.x - j.x, g.y - j.y) < lr + 11) { j.dead = true; g.power = Math.max(g.power, j.kind); g.wflash = 0.6; g.score += 15; spawnParts(g, j.x, j.y, 14, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       if (g.y + lr >= g.groundY) {
         g.y = g.groundY - lr;
         const overPad = g.x > g.padX && g.x < g.padX + g.padW;
@@ -372,6 +458,8 @@ export const GAMES_DEF = {
       ctx.fillStyle = "#3fe89b";
       ctx.beginPath(); ctx.arc(g.padX, g.groundY, 3, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(g.padX + g.padW, g.groundY, 3, 0, Math.PI * 2); ctx.fill();
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.power === 2 ? "#c98bff" : "#3fe89b"; ctx.beginPath(); ctx.arc(g.x, g.y, 24, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
       if (thrust) {
         ctx.fillStyle = "#ffcf6b";
         ctx.beginPath(); ctx.moveTo(g.x - 5, g.y + lr - 2); ctx.lineTo(g.x + 5, g.y + lr - 2); ctx.lineTo(g.x, g.y + lr + 12 + Math.random() * 8); ctx.closePath(); ctx.fill();
@@ -389,7 +477,7 @@ export const GAMES_DEF = {
   ascent: {
     meta: {
       title: { en: "Rocket Ascent", ja: "ロケット上昇" },
-      goal: { en: "Tap to thrust and keep climbing — slip through each asteroid belt's gap to score.", ja: "タップで噴射して上昇を続けよう——小惑星帯の隙間を抜けるたび得点。" },
+      goal: { en: "Tap to thrust and keep climbing — slip through each asteroid belt's gap to score. Fly through power gems: 1:00 grants a shield, 2:00 auto-recharges it.", ja: "タップで噴射して上昇を続けよう——小惑星帯の隙間を抜けるたび得点。パワージェムを通ろう：1分でシールド、2分で自動リチャージ。" },
       avoid: { en: "Hitting a belt or the top or bottom edge costs a life.", ja: "小惑星帯や画面の上下端に当たるとライフを1つ失う。" },
       pad: "lrf",
     },
@@ -397,6 +485,7 @@ export const GAMES_DEF = {
       g.bg = makeStars(api.W, api.H, 60);
       g.rx = api.W * 0.3; g.y = api.H / 2; g.vy = 0;
       g.belts = []; g.spawn = 0.8; g.wasFire = false;
+      g.shield = 0; g.recharge = false; g.rt = 0; g.jw1 = false; g.jw2 = false; g.jewels = []; g.wflash = 0;
     },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys } = api, r = 14;
@@ -413,12 +502,25 @@ export const GAMES_DEF = {
         g.spawn = 220 / speed;
       }
       const reset = () => {
+        if (g.shield > 0) { g.shield--; g.wflash = 0.6; spawnParts(g, g.rx, g.y, 12, "#3fddff"); g.y = H / 2; g.vy = 0; g.belts = g.belts.filter((b) => b.x > g.rx + 90 || b.x + b.w < g.rx - 90); return; }
         lose(g, over);
         g.y = H / 2; g.vy = 0;
         g.belts = g.belts.filter((b) => b.x > g.rx + 90 || b.x + b.w < g.rx - 90);
       };
+      if (g.wflash > 0) g.wflash -= dt;
+      if (g.recharge && g.shield < 1) { g.rt += dt; if (g.rt >= 10) { g.shield = 1; g.rt = 0; g.wflash = 0.6; } }
       for (const b of g.belts) b.x -= speed * dt;
       g.belts = g.belts.filter((b) => b.x + b.w > -10);
+      // power gems float in and scroll left with the belts
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: W + 24, y: 60 + Math.random() * (H - 120), kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: W + 24, y: 60 + Math.random() * (H - 120), kind: 2 }); }
+      for (const j of g.jewels) {
+        if (j.dead) continue;
+        j.x -= speed * dt;
+        if (Math.hypot(j.x - g.rx, j.y - g.y) < 11 + r) { j.dead = true; if (j.kind === 1) g.shield = Math.max(g.shield, 1); else g.recharge = true; g.wflash = 0.6; g.score += 10; spawnParts(g, j.x, j.y, 14, j.kind === 2 ? "#c98bff" : "#3fe89b"); }
+        else if (j.x < -20) j.dead = true;
+      }
+      g.jewels = g.jewels.filter((j) => !j.dead);
       if (g.y - r < 0 || g.y + r > H) { reset(); }
       else for (const b of g.belts) {
         if (g.rx + r > b.x && g.rx - r < b.x + b.w) {
@@ -435,18 +537,21 @@ export const GAMES_DEF = {
         ctx.strokeStyle = "rgba(63,221,255,0.5)"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(b.x + b.w / 2, b.gapY); ctx.lineTo(b.x + b.w / 2, b.gapY + b.gapH); ctx.stroke();
       }
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       const glow = ctx.createRadialGradient(g.rx, g.y, 2, g.rx, g.y, 24);
       glow.addColorStop(0, "rgba(255,207,107,0.5)"); glow.addColorStop(1, "rgba(255,207,107,0)");
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.rx, g.y, 24, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.rx, g.y - r); ctx.lineTo(g.rx - 9, g.y + r); ctx.lineTo(g.rx + 9, g.y + r); ctx.closePath(); ctx.fill();
       if (press) { ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(g.rx - 4, g.y + r); ctx.lineTo(g.rx + 4, g.y + r); ctx.lineTo(g.rx, g.y + r + 12 + Math.random() * 6); ctx.closePath(); ctx.fill(); }
+      if (g.shield > 0) { ctx.strokeStyle = "rgba(63,221,255,0.8)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(g.rx, g.y, 20, 0, Math.PI * 2); ctx.stroke(); }
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = "#3fddff"; ctx.beginPath(); ctx.arc(g.rx, g.y, 26, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
 
   shield: {
     meta: {
       title: { en: "Solar Flare Shield", ja: "太陽フレア・シールド" },
-      goal: { en: "Rotate your shield arc to intercept incoming solar flares before they reach the planet.", ja: "シールドの弧を回して、太陽フレアが惑星に届く前に受け止めよう。" },
+      goal: { en: "Rotate your shield arc to intercept incoming solar flares before they reach the planet. Catch green power flares: 1:00 widens your arc, 2:00 adds a second arc opposite.", ja: "シールドの弧を回して、太陽フレアが惑星に届く前に受け止めよう。緑のパワーフレアを受け止めよう：1分で弧が広がり、2分で反対側に弧が追加。" },
       avoid: { en: "Every flare that slips past the shield and strikes the planet costs a life.", ja: "シールドをすり抜けて惑星に当たるフレアごとにライフを1つ失う。" },
       pad: "lr",
     },
@@ -455,6 +560,7 @@ export const GAMES_DEF = {
       g.cx = api.W / 2; g.cy = api.H / 2;
       g.ang = -Math.PI / 2; g.arcHalf = 0.58; g.R = 96; g.planetR = 30;
       g.flares = []; g.spawn = 0.9;
+      g.power = 0; g.jw1 = false; g.jw2 = false; g.wflash = 0;
     },
     step: (g, ctx, dt, api, over) => {
       const { keys } = api, rot = 3.1;
@@ -462,13 +568,23 @@ export const GAMES_DEF = {
       if (keys.right) g.ang += rot * dt;
       g.spawn -= dt; const iv = Math.max(0.4, 1.15 - g.t * 0.02);
       if (g.spawn <= 0) { g.flares.push({ a: Math.random() * Math.PI * 2, d: 270, hit: false }); g.spawn = iv; }
+      if (g.wflash > 0) g.wflash -= dt;
+      // green power flares at 1:00 and 2:00 (intercept to grant)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.flares.push({ a: Math.random() * Math.PI * 2, d: 270, hit: false, power: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.flares.push({ a: Math.random() * Math.PI * 2, d: 270, hit: false, power: 2 }); }
       const sp = 96 + g.t * 1.2;
       for (const f of g.flares) {
         if (f.hit) continue;
         const pd = f.d; f.d -= sp * dt;
         if (pd > g.R && f.d <= g.R) {
           let da = f.a - g.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
-          if (Math.abs(da) < g.arcHalf) { f.hit = true; g.score += 1; spawnParts(g, g.cx + Math.cos(f.a) * g.R, g.cy + Math.sin(f.a) * g.R, 10, "#3fddff"); }
+          let da2 = f.a - (g.ang + Math.PI); da2 = Math.atan2(Math.sin(da2), Math.cos(da2));
+          const blocked = Math.abs(da) < g.arcHalf || (g.power >= 2 && Math.abs(da2) < g.arcHalf);
+          if (blocked) {
+            f.hit = true; g.score += 1;
+            if (f.power) { g.power = Math.max(g.power, f.power); g.arcHalf = g.power >= 1 ? 0.85 : 0.58; g.wflash = 0.6; g.score += 15; }
+            spawnParts(g, g.cx + Math.cos(f.a) * g.R, g.cy + Math.sin(f.a) * g.R, 10, f.power ? (f.power === 2 ? "#c98bff" : "#3fe89b") : "#3fddff");
+          }
         }
         if (!f.hit && f.d <= g.planetR) { f.hit = true; spawnParts(g, g.cx + Math.cos(f.a) * g.planetR, g.cy + Math.sin(f.a) * g.planetR, 12, "#ff7a6b"); lose(g, over); }
       }
@@ -484,25 +600,28 @@ export const GAMES_DEF = {
       for (const f of g.flares) {
         const x = g.cx + Math.cos(f.a) * f.d, y = g.cy + Math.sin(f.a) * f.d;
         const x2 = g.cx + Math.cos(f.a) * (f.d + 18), y2 = g.cy + Math.sin(f.a) * (f.d + 18);
-        ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        ctx.strokeStyle = f.power ? (f.power === 2 ? "#c98bff" : "#3fe89b") : "#ffcf6b"; ctx.lineWidth = f.power ? 5 : 3; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
       }
       ctx.lineCap = "butt";
       ctx.strokeStyle = C.cool; ctx.lineWidth = 9;
       ctx.beginPath(); ctx.arc(g.cx, g.cy, g.R, g.ang - g.arcHalf, g.ang + g.arcHalf); ctx.stroke();
+      if (g.power >= 2) { ctx.beginPath(); ctx.arc(g.cx, g.cy, g.R, g.ang + Math.PI - g.arcHalf, g.ang + Math.PI + g.arcHalf); ctx.stroke(); }
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.6; ctx.strokeStyle = g.power === 2 ? "#c98bff" : "#3fe89b"; ctx.lineWidth = 12; ctx.beginPath(); ctx.arc(g.cx, g.cy, g.R, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
     },
   },
 
   breaker: {
     meta: {
       title: { en: "Meteor Breaker", ja: "メテオ・ブレイカー" },
-      goal: { en: "Bounce the comet off your paddle to shatter every asteroid brick above.", ja: "パドルで彗星を弾き返し、上の小惑星ブロックをすべて砕こう。" },
+      goal: { en: "Bounce the comet off your paddle to shatter every asteroid brick above. Catch power capsules: 1:00 widens your paddle, 2:00 splits into multiball.", ja: "パドルで彗星を弾き返し、上の小惑星ブロックをすべて砕こう。パワーカプセルを取ろう：1分でパドルが広がり、2分でマルチボールに分裂。" },
       avoid: { en: "Letting the comet fall past the paddle costs a life.", ja: "彗星をパドルの下に落とすとライフを1つ失う。" },
       pad: "lr",
     },
     init: (g, api) => {
       g.bg = makeStars(api.W, api.H, 60);
       g.paddleW = 96; g.paddleX = api.W / 2; g.paddleY = api.H - 26;
+      g.power = 0; g.jw1 = false; g.jw2 = false; g.caps = []; g.wflash = 0;
       g.build = () => {
         const cols = 8, rows = 4, top = 54, bw = (api.W - 40) / cols, bh = 20;
         const cols2 = ["#f5a742", "#ffcf6b", "#63d3f0", "#c98bff"];
@@ -511,67 +630,96 @@ export const GAMES_DEF = {
           g.bricks.push({ x: 20 + c * bw, y: top + r * (bh + 6), w: bw - 5, h: bh, pts: (rows - r) * 2, color: cols2[r % cols2.length] });
       };
       g.build();
-      g.serve = () => { g.ball = { x: g.paddleX, y: g.paddleY - 12, vx: 130 * (Math.random() < 0.5 ? -1 : 1), vy: -240 }; };
+      g.serve = () => { g.balls = [{ x: g.paddleX, y: g.paddleY - 12, vx: 130 * (Math.random() < 0.5 ? -1 : 1), vy: -240 }]; };
       g.serve();
     },
     step: (g, ctx, dt, api, over) => {
-      const { W, H, keys } = api, spd = 360, r = 7, b = g.ball;
+      const { W, H, keys } = api, spd = 360, r = 7;
       if (keys.left) g.paddleX -= spd * dt;
       if (keys.right) g.paddleX += spd * dt;
       if (g.pdown && g.px != null) g.paddleX += clamp(g.px - g.paddleX, -spd * dt, spd * dt);
       g.paddleX = clamp(g.paddleX, g.paddleW / 2, W - g.paddleW / 2);
-      b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); }
-      if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); }
-      if (b.y < 40 + r) { b.y = 40 + r; b.vy = Math.abs(b.vy); }
-      if (b.vy > 0 && b.y + r >= g.paddleY && b.y < g.paddleY + 14 && b.x > g.paddleX - g.paddleW / 2 - r && b.x < g.paddleX + g.paddleW / 2 + r) {
-        const off = clamp((b.x - g.paddleX) / (g.paddleW / 2), -1, 1);
-        const sp = Math.hypot(b.vx, b.vy), ang = -Math.PI / 2 + off * 1.05;
-        b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp; b.y = g.paddleY - r - 1;
+      if (g.wflash > 0) g.wflash -= dt;
+      // power capsules: wider paddle at 1:00, multiball at 2:00 (each once)
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.caps.push({ x: 30 + Math.random() * (W - 60), y: 40, vy: 120, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.caps.push({ x: 30 + Math.random() * (W - 60), y: 40, vy: 120, kind: 2 }); }
+      for (const c of g.caps) {
+        if (c.dead) continue;
+        c.y += c.vy * dt;
+        if (c.y >= g.paddleY && Math.abs(c.x - g.paddleX) < g.paddleW / 2) {
+          c.dead = true; g.wflash = 0.6; g.power = Math.max(g.power, c.kind); g.score += 15;
+          spawnParts(g, c.x, c.y, 14, c.kind === 2 ? "#c98bff" : "#3fe89b");
+          if (c.kind === 1) { g.paddleW += 40; g.paddleX = clamp(g.paddleX, g.paddleW / 2, W - g.paddleW / 2); }
+          else { const src = g.balls[0]; if (src) g.balls.push({ x: src.x, y: src.y, vx: -src.vx, vy: src.vy }); }
+        } else if (c.y > H + 20) c.dead = true;
       }
-      for (const k of g.bricks) {
-        if (k.dead) continue;
-        if (b.x + r > k.x && b.x - r < k.x + k.w && b.y + r > k.y && b.y - r < k.y + k.h) {
-          k.dead = true; g.score += k.pts; spawnParts(g, b.x, b.y, 10, k.color);
-          const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
-          if (Math.abs(b.x - cx) / k.w > Math.abs(b.y - cy) / k.h) b.vx *= -1; else b.vy *= -1;
-          break;
+      g.caps = g.caps.filter((c) => !c.dead);
+      // move each ball: walls, paddle, bricks
+      for (const b of g.balls) {
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); }
+        if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); }
+        if (b.y < 40 + r) { b.y = 40 + r; b.vy = Math.abs(b.vy); }
+        if (b.vy > 0 && b.y + r >= g.paddleY && b.y < g.paddleY + 14 && b.x > g.paddleX - g.paddleW / 2 - r && b.x < g.paddleX + g.paddleW / 2 + r) {
+          const off = clamp((b.x - g.paddleX) / (g.paddleW / 2), -1, 1);
+          const sp = Math.hypot(b.vx, b.vy), ang = -Math.PI / 2 + off * 1.05;
+          b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp; b.y = g.paddleY - r - 1;
+        }
+        for (const k of g.bricks) {
+          if (k.dead) continue;
+          if (b.x + r > k.x && b.x - r < k.x + k.w && b.y + r > k.y && b.y - r < k.y + k.h) {
+            k.dead = true; g.score += k.pts; spawnParts(g, b.x, b.y, 10, k.color);
+            const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
+            if (Math.abs(b.x - cx) / k.w > Math.abs(b.y - cy) / k.h) b.vx *= -1; else b.vy *= -1;
+            break;
+          }
         }
       }
       g.bricks = g.bricks.filter((k) => !k.dead);
       if (g.bricks.length === 0) { g.score += 20; g.build(); }
-      if (b.y - r > H) { lose(g, over); g.serve(); }
+      // remove balls off the bottom; lose a life only when the last ball is gone
+      g.balls = g.balls.filter((b) => b.y - r <= H);
+      if (g.balls.length === 0) { lose(g, over); g.serve(); }
       // ---- draw ----
       drawBg(ctx, g, W, H);
       for (const k of g.bricks) {
         ctx.fillStyle = k.color; ctx.globalAlpha = 0.85; ctx.fillRect(k.x, k.y, k.w, k.h); ctx.globalAlpha = 1;
         ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1; ctx.strokeRect(k.x, k.y, k.w, k.h);
       }
-      const bg = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 16);
-      bg.addColorStop(0, "#eaf3ff"); bg.addColorStop(1, "rgba(99,211,240,0)");
-      ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(b.x, b.y, 16, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill();
+      for (const c of g.caps) drawJewel(ctx, c.x, c.y, c.kind, g.t);
+      for (const b of g.balls) {
+        const bg = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 16);
+        bg.addColorStop(0, "#eaf3ff"); bg.addColorStop(1, "rgba(99,211,240,0)");
+        ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(b.x, b.y, 16, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.fillStyle = C.cool; ctx.fillRect(g.paddleX - g.paddleW / 2, g.paddleY, g.paddleW, 10);
       ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.fillRect(g.paddleX - g.paddleW / 2, g.paddleY, g.paddleW, 3);
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.power === 2 ? "#c98bff" : "#3fe89b"; ctx.fillRect(g.paddleX - g.paddleW / 2 - 6, g.paddleY - 6, g.paddleW + 12, 22); ctx.restore(); }
     },
   },
 
   docking: {
     meta: {
       title: { en: "Satellite Docking", ja: "衛星ドッキング" },
-      goal: { en: "Slide the capsule under the spinning station and fire when the green port swings to the bottom.", ja: "カプセルを回転する宇宙ステーションの下に合わせ、緑のポートが下に来た瞬間に発射しよう。" },
+      goal: { en: "Slide the capsule under the spinning station and fire when the green port swings to the bottom. Fly through power gems: 1:00 widens the docking port, 2:00 slows the station.", ja: "カプセルを回転する宇宙ステーションの下に合わせ、緑のポートが下に来た瞬間に発射しよう。パワージェムを通ろう：1分でポートが広がり、2分でステーションが減速。" },
       avoid: { en: "Slamming into the station's body instead of the port costs a life.", ja: "ポートではなくステーション本体に激突するとライフを1つ失う。" },
       pad: "lrf",
     },
     init: (g, api) => {
       g.bg = makeStars(api.W, api.H, 60);
       g.sx = api.W / 2; g.sy = 118; g.Rst = 54; g.portHalf = 0.55;
-      g.stAng = 0; g.stSpeed = 1.25;
+      g.stAng = 0; g.stSpeed = 1.25; g.stCap = 3.4;
       g.capX = api.W / 2; g.capY = api.H - 30; g.flying = false; g.wasFire = false; g.trail = [];
+      g.power = 0; g.jw1 = false; g.jw2 = false; g.jewels = []; g.wflash = 0;
     },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys } = api, r = 8, capSpeed = 268;
       g.stAng += g.stSpeed * dt;
+      if (g.wflash > 0) g.wflash -= dt;
+      // power gems float between the capsule and the station
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: (H + g.sy) / 2, kind: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.jewels.push({ x: 30 + Math.random() * (W - 60), y: (H + g.sy) / 2, kind: 2 }); }
       const press = keys.fire || g.pdown;
       const launch = (press && !g.wasFire) || g.tapped;
       g.wasFire = press; g.tapped = null;
@@ -584,6 +732,16 @@ export const GAMES_DEF = {
       } else {
         const pd = Math.hypot(g.capX - g.sx, g.capY - g.sy);
         g.capY -= capSpeed * dt;
+        for (const j of g.jewels) {
+          if (j.dead) continue;
+          if (Math.hypot(g.capX - j.x, g.capY - j.y) < r + 11) {
+            j.dead = true; g.wflash = 0.6; g.score += 15;
+            if (j.kind === 1) { g.power = Math.max(g.power, 1); g.portHalf = 0.85; }
+            else { g.power = Math.max(g.power, 2); g.stSpeed *= 0.7; g.stCap = 2.4; }
+            spawnParts(g, j.x, j.y, 14, j.kind === 2 ? "#c98bff" : "#3fe89b");
+          }
+        }
+        g.jewels = g.jewels.filter((j) => !j.dead);
         g.trail.push({ x: g.capX, y: g.capY }); if (g.trail.length > 10) g.trail.shift();
         const nd = Math.hypot(g.capX - g.sx, g.capY - g.sy);
         if (pd > g.Rst && nd <= g.Rst) {
@@ -591,7 +749,7 @@ export const GAMES_DEF = {
           let da = ca - g.stAng; da = Math.atan2(Math.sin(da), Math.cos(da));
           if (Math.abs(da) < g.portHalf) {
             g.score += 40; spawnParts(g, g.capX, g.capY, 14, "#3fe89b");
-            g.stSpeed = Math.min(3.4, g.stSpeed + 0.28);
+            g.stSpeed = Math.min(g.stCap, g.stSpeed + 0.28);
           } else {
             spawnParts(g, g.capX, g.capY, 14, "#ff7a6b"); lose(g, over);
           }
@@ -610,7 +768,9 @@ export const GAMES_DEF = {
       ctx.fillStyle = "rgba(160,120,220,0.35)"; ctx.beginPath(); ctx.arc(g.sx, g.sy, g.Rst - 16, 0, Math.PI * 2); ctx.fill();
       for (let i = 0; i < g.trail.length; i++) { const p = g.trail[i]; ctx.globalAlpha = i / g.trail.length * 0.6; ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalAlpha = 1;
+      for (const j of g.jewels) drawJewel(ctx, j.x, j.y, j.kind, g.t);
       ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.capX, g.capY - r); ctx.lineTo(g.capX - r, g.capY + r); ctx.lineTo(g.capX + r, g.capY + r); ctx.closePath(); ctx.fill();
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = g.power === 2 ? "#c98bff" : "#3fe89b"; ctx.beginPath(); ctx.arc(g.capX, g.capY, 20, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
       if (!g.flying) { ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.setLineDash([4, 8]); ctx.beginPath(); ctx.moveTo(g.capX, g.capY - r); ctx.lineTo(g.capX, g.sy); ctx.stroke(); ctx.setLineDash([]); }
     },
   },
@@ -618,7 +778,7 @@ export const GAMES_DEF = {
   wormhole: {
     meta: {
       title: { en: "Wormhole Run", ja: "ワームホール・ラン" },
-      goal: { en: "Steer the ship through each gate's bright opening — grab stray stars for extra points.", ja: "宇宙船をゲートの明るい開口部に通そう——散らばる星を集めると追加得点。" },
+      goal: { en: "Steer the ship through each gate's bright opening — grab stray stars for extra points. Grab green power stars: 1:00 grants a shield, 2:00 auto-recharges it.", ja: "宇宙船をゲートの明るい開口部に通そう——散らばる星を集めると追加得点。緑のパワースターを取ろう：1分でシールド、2分で自動リチャージ。" },
       avoid: { en: "Clipping a gate ring instead of its gap costs a life.", ja: "開口部ではなくゲートのリングに当たるとライフを1つ失う。" },
       pad: "lr",
     },
@@ -626,6 +786,7 @@ export const GAMES_DEF = {
       g.bg = makeStars(api.W, api.H, 60);
       g.shipX = api.W / 2; g.shipY = api.H - 52;
       g.gates = []; g.stars = []; g.spawn = 0.6; g.sspawn = 1.4;
+      g.shield = 0; g.recharge = false; g.rt = 0; g.jw1 = false; g.jw2 = false; g.wflash = 0;
     },
     step: (g, ctx, dt, api, over) => {
       const { W, H, keys } = api, spd = 340;
@@ -634,6 +795,10 @@ export const GAMES_DEF = {
       if (keys.right) g.shipX += spd * dt;
       if (g.pdown && g.px != null) g.shipX += clamp(g.px - g.shipX, -spd * dt, spd * dt);
       g.shipX = clamp(g.shipX, 16, W - 16);
+      if (g.wflash > 0) g.wflash -= dt;
+      if (g.recharge && g.shield < 1) { g.rt += dt; if (g.rt >= 10) { g.shield = 1; g.rt = 0; g.wflash = 0.6; } }
+      if (!g.jw1 && g.t >= 60) { g.jw1 = true; g.stars.push({ x: 30 + Math.random() * (W - 60), y: -14, power: 1 }); }
+      if (!g.jw2 && g.t >= 120) { g.jw2 = true; g.stars.push({ x: 30 + Math.random() * (W - 60), y: -14, power: 2 }); }
       g.spawn -= dt;
       if (g.spawn <= 0) { const gapW = 108, gapX = 30 + gapW / 2 + Math.random() * (W - 60 - gapW); g.gates.push({ y: -20, py: -20, gapX, gapW, scored: false }); g.spawn = 150 / scroll; }
       g.sspawn -= dt;
@@ -643,13 +808,18 @@ export const GAMES_DEF = {
         if (!gt.scored && gt.py < g.shipY && gt.y >= g.shipY) {
           gt.scored = true;
           if (g.shipX > gt.gapX - gt.gapW / 2 && g.shipX < gt.gapX + gt.gapW / 2) { g.score += 1; spawnParts(g, g.shipX, g.shipY, 10, "#c98bff"); }
+          else if (g.shield > 0) { g.shield--; g.wflash = 0.6; spawnParts(g, g.shipX, g.shipY, 12, "#3fddff"); }
           else { spawnParts(g, g.shipX, g.shipY, 12, "#ff7a6b"); lose(g, over); }
         }
       }
       g.gates = g.gates.filter((gt) => gt.y < H + 30);
       for (const s of g.stars) {
         s.y += scroll * dt;
-        if (!s.hit && Math.abs(s.x - g.shipX) < 16 && Math.abs(s.y - g.shipY) < 16) { s.hit = true; g.score += 3; spawnParts(g, s.x, s.y, 8, "#ffcf6b"); }
+        if (!s.hit && Math.abs(s.x - g.shipX) < 16 && Math.abs(s.y - g.shipY) < 16) {
+          s.hit = true;
+          if (s.power) { if (s.power === 1) g.shield = Math.max(g.shield, 1); else g.recharge = true; g.wflash = 0.6; g.score += 15; spawnParts(g, s.x, s.y, 10, s.power === 2 ? "#c98bff" : "#3fe89b"); }
+          else { g.score += 3; spawnParts(g, s.x, s.y, 8, "#ffcf6b"); }
+        }
       }
       g.stars = g.stars.filter((s) => !s.hit && s.y < H + 20);
       // ---- draw ----
@@ -665,6 +835,7 @@ export const GAMES_DEF = {
         ctx.beginPath(); ctx.arc(grr, gt.y, 4, 0, Math.PI * 2); ctx.fill();
       }
       for (const s of g.stars) {
+        if (s.power) { drawJewel(ctx, s.x, s.y, s.power, g.t); continue; }
         const sg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 12); sg.addColorStop(0, "#ffe08a"); sg.addColorStop(1, "rgba(255,207,107,0)");
         ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#fff4d6"; ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2); ctx.fill();
@@ -673,6 +844,8 @@ export const GAMES_DEF = {
       glow.addColorStop(0, "rgba(99,211,240,0.5)"); glow.addColorStop(1, "rgba(99,211,240,0)");
       ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(g.shipX, g.shipY, 24, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#eaf3ff"; ctx.beginPath(); ctx.moveTo(g.shipX, g.shipY - 14); ctx.lineTo(g.shipX - 11, g.shipY + 11); ctx.lineTo(g.shipX + 11, g.shipY + 11); ctx.closePath(); ctx.fill();
+      if (g.shield > 0) { ctx.strokeStyle = "rgba(63,221,255,0.8)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(g.shipX, g.shipY, 20, 0, Math.PI * 2); ctx.stroke(); }
+      if (g.wflash > 0) { ctx.save(); ctx.globalAlpha = Math.max(0, g.wflash / 0.6) * 0.5; ctx.fillStyle = "#3fddff"; ctx.beginPath(); ctx.arc(g.shipX, g.shipY, 26, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     },
   },
 };
