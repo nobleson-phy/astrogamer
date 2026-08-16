@@ -64,6 +64,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch6/index.html",
   },
+  {
+    n: 7,
+    title: { en: "An Introduction to the Solar System", ja: "太陽系への招待" },
+    blurb: {
+      en: "Tour our cosmic neighbourhood — the Sun that holds 99.8% of the mass, the two families of planets, asteroids and comets as chemical fossils, radioactive clocks, and the spinning nebula that gave birth to it all.",
+      ja: "私たちの宇宙のご近所を巡ろう——質量の99.8%を握る太陽、2つの惑星の一族、化学的化石としての小惑星と彗星、放射性時計、そしてすべてを生んだ回転する星雲。",
+    },
+    href: "chapters/ch7/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
