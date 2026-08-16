@@ -19,6 +19,7 @@ The landing page lists the course chapters. Available now:
 3. **Orbits and Gravity** — Kepler's laws, Newton's laws of motion, universal gravitation, angular momentum, orbits, escape speed and gravity assists.
 4. **Earth, Moon, and Sky** — mapping the sky, the seasons, keeping time, calendars, the phases of the Moon, tides, and eclipses.
 5. **Radiation and Spectra** — light as waves and photons, the electromagnetic spectrum, the inverse-square law, blackbody colours, the prism, the atom's spectral fingerprints, and the Doppler shift.
+6. **Astronomical Instruments** — the telescope as a light bucket, lenses versus mirrors, focus arrangements, seeing and adaptive optics, CCD detectors and cooling, interferometry, and the great observatories from Hubble to JWST to Rubin.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
