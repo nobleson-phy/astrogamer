@@ -20,6 +20,7 @@ The landing page lists the course chapters. Available now:
 4. **Earth, Moon, and Sky** — mapping the sky, the seasons, keeping time, calendars, the phases of the Moon, tides, and eclipses.
 5. **Radiation and Spectra** — light as waves and photons, the electromagnetic spectrum, the inverse-square law, blackbody colours, the prism, the atom's spectral fingerprints, and the Doppler shift.
 6. **Astronomical Instruments** — the telescope as a light bucket, lenses versus mirrors, focus arrangements, seeing and adaptive optics, CCD detectors and cooling, interferometry, and the great observatories from Hubble to JWST to Rubin.
+7. **An Introduction to the Solar System** — the Sun's 99.8% of the mass, terrestrial versus giant planets, asteroids and comets as chemical fossils, differentiation, radioactive dating, reading surfaces, the solar nebula, and the exceptions that break the rules.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
