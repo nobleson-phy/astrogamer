@@ -55,6 +55,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch5/index.html",
   },
+  {
+    n: 6,
+    title: { en: "Astronomical Instruments", ja: "天文観測機器" },
+    blurb: {
+      en: "How we actually see the cosmos — the telescope as a light bucket, lenses versus mirrors, beating the blurring atmosphere, the detectors that record starlight, and the great observatories from Hubble to JWST to Rubin.",
+      ja: "宇宙を実際にどう見るのか——光のバケツとしての望遠鏡、レンズと鏡、ぼやけを生む大気に打ち勝つ工夫、星の光を記録する検出器、そしてハッブルからJWST、ルービンまでの偉大な観測所。",
+    },
+    href: "chapters/ch6/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
