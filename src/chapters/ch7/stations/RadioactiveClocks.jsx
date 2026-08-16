@@ -28,6 +28,7 @@ const STR = {
     step: "▶ Advance one half-life", reset: "↺ Reset",
     hl: "Half-lives elapsed", remain: "Parent remaining", parent: "parent", daughter: "daughter",
     hint25: "At 25% remaining, exactly two half-lives have passed.",
+    maxed: "The clock has run down — after 7 half-lives only a single parent atom is left.",
     note: "Blue = radioactive parent atoms, gold = daughter atoms they decayed into. Each step halves the parents (100% → 50% → 25% → 12.5% …). The fraction left tells you the age.",
   },
   ja: {
@@ -41,6 +42,7 @@ const STR = {
     step: "▶ 半減期を1つ進める", reset: "↺ リセット",
     hl: "経過した半減期", remain: "残っている親", parent: "親", daughter: "娘",
     hint25: "残り25%なら、ちょうど2半減期が過ぎています。",
+    maxed: "時計は下がりきりました——7半減期を過ぎると、親原子は1個しか残りません。",
     note: "青＝放射性の親原子、金＝崩壊してできた娘原子。1ステップごとに親が半分に（100%→50%→25%→12.5%…）。残りの割合が年齢を教えてくれます。",
   },
 };
@@ -79,6 +81,7 @@ export function RadioactiveClocks() {
 
   const parents = atoms.filter((a) => a.parent).length;
   const pct = (parents / TOTAL) * 100;
+  const done = parents <= 1; // 128 = 2^7, so 7 half-lives leaves one atom — stop here
 
   useEffect(() => {
     const c = canRef.current;
@@ -88,6 +91,7 @@ export function RadioactiveClocks() {
   }, [cw, atoms, lang]);
 
   const step = () => {
+    if (done) return; // clock has bottomed out at a single atom (7 half-lives)
     setAtoms((prev) => {
       const next = prev.map((a) => ({ ...a }));
       const idx = next.map((a, i) => (a.parent ? i : -1)).filter((i) => i >= 0);
@@ -121,8 +125,9 @@ export function RadioactiveClocks() {
         <p style={{ ...styles.note, fontStyle: "italic", marginTop: 0, marginBottom: 12 }}>{t.lede}</p>
 
         <div style={styles.controlBar}>
-          <button style={styles.iconBtn} onClick={step}>{t.step}</button>
+          <button style={{ ...styles.iconBtn, ...(done ? { opacity: 0.4, cursor: "default" } : {}) }} onClick={step} disabled={done}>{t.step}</button>
           <button style={{ ...styles.iconBtn, opacity: 0.85 }} onClick={reset}>{t.reset}</button>
+          {done && <span style={{ fontFamily: mono, fontSize: 12.5, color: C.faint }}>{t.maxed}</span>}
         </div>
 
         <div style={{ display: "flex", gap: 24, marginTop: 12, marginBottom: 8, alignItems: "baseline" }}>
