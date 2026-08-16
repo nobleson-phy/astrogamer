@@ -32,7 +32,7 @@ const STR = {
     focusMark: "focus",
     flMark: "focal length",
     rel1: "= D² × a 1-metre telescope",
-    note: "The blue disc is the aperture, drawn to scale. Parallel starlight (the horizontal rays) is bent to meet at the focus; everything the disc catches is funnelled to that one point.",
+    note: "The blue disc is the aperture, drawn to scale. Parallel starlight (the horizontal rays) is bent to meet at the focus; everything the disc catches is funnelled to that one point. Widen the aperture and more rays pour in — that extra light is what a bigger telescope buys you.",
   },
   ja: {
     title: "光のバケツ",
@@ -50,7 +50,7 @@ const STR = {
     focusMark: "焦点",
     flMark: "焦点距離",
     rel1: "= D² × 1メートル望遠鏡",
-    note: "青い円盤が口径で、縮尺どおりに描いています。平行な星の光（水平な光線）は焦点で交わるように曲げられ、円盤が捉えたすべてがその一点に集められます。",
+    note: "青い円盤が口径で、縮尺どおりに描いています。平行な星の光（水平な光線）は焦点で交わるように曲げられ、円盤が捉えたすべてがその一点に集められます。口径を広げるほど多くの光線が入ってきます——その余分な光こそ、大きな望遠鏡が手に入れるものです。",
   },
 };
 
@@ -68,8 +68,9 @@ function drawBucket(ctx, cw, H, D, lang) {
   // focal length: draw focus to the right; make it look like a light cone
   const focusX = cw - 40;
 
-  // incoming parallel rays from the left (a distant source)
-  const nRays = 7;
+  // incoming parallel rays from the left (a distant source) — the wider the
+  // aperture, the more rays it intercepts, so bigger buckets visibly catch more light
+  const nRays = Math.max(3, Math.round(2 + D * 1.9));
   ctx.lineWidth = 1.4;
   for (let i = 0; i < nRays; i++) {
     const fr = nRays === 1 ? 0.5 : i / (nRays - 1);
