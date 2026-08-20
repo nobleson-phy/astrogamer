@@ -51,15 +51,19 @@ function draw(ctx, cw, H, prog, lang) {
   ctx.strokeStyle = "rgba(255,255,255,0.15)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI * 2); ctx.stroke();
   // quake epicentre at top
   const qx = cx, qy = cy - R;
-  // S-wave shadow zone: a band on the far hemisphere (bottom), draw as faint wedge
+  // S-wave shadow zone: two bands on the far hemisphere (bottom) where S-waves
+  // never arrive because the liquid core stops them. Drawn in bright violet.
   ctx.save();
-  ctx.fillStyle = "rgba(255,90,90,0.10)";
   for (const s of [1, -1]) {
+    const a0 = Math.PI / 2 + s * 0.5, a1 = Math.PI / 2 + s * 1.18;
     ctx.beginPath(); ctx.moveTo(cx, cy);
-    const a0 = Math.PI / 2 + s * 0.55, a1 = Math.PI / 2 + s * 1.15;
-    ctx.arc(cx, cy, R + 30, a0, a1, s < 0); ctx.closePath(); ctx.fill();
+    ctx.arc(cx, cy, R + 34, a0, a1, s < 0); ctx.closePath();
+    ctx.fillStyle = "rgba(201,139,255,0.30)"; ctx.fill();
+    ctx.strokeStyle = "rgba(201,139,255,0.95)"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
   }
   ctx.restore();
+  ctx.fillStyle = "#c98bff"; ctx.font = `700 11px ${mono}`; ctx.textAlign = "center";
+  ctx.fillText(t.shadow, cx, Math.min(cy + R + 22, H - 6));
   // rays: P (blue, cross whole planet, refract at core) and S (gold, stop at core)
   const n = 9;
   for (let i = 0; i < n; i++) {
@@ -162,7 +166,7 @@ export function SeismicSounding() {
         <div style={{ fontFamily: mono, fontSize: 12.5, marginTop: 8, lineHeight: 1.8, color: C.muted }}>
           <div><span style={{ color: "#4aa3ff" }}>●</span> {t.pWave}</div>
           <div><span style={{ color: "#ffcf6b" }}>●</span> {t.sWave}</div>
-          <div><span style={{ color: "rgba(255,90,90,0.9)" }}>▧</span> {t.shadow}</div>
+          <div><span style={{ color: "#c98bff" }}>▧</span> {t.shadow}</div>
         </div>
 
         <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>

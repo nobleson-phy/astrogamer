@@ -67,10 +67,10 @@ function drawCrusts(ctx, cw, H, t, lang) {
   ctx.fillStyle = "#b98a55"; ctx.fillRect(0, seaY, mid, 150);
   ctx.fillStyle = "#2a1c10"; ctx.font = `700 12px ${mono}`; ctx.fillText(t.cont, mid / 2, seaY + 40);
   ctx.fillStyle = "#3a2a18"; ctx.font = `11px ${mono}`; ctx.fillText(t.granite, mid / 2, seaY + 58);
-  // oceanic crust (right) thin basalt
+  // oceanic crust (right) thin basalt — single-line label so nothing is clipped
   ctx.fillStyle = "#4a4a55"; ctx.fillRect(mid, seaY + 46, cw - mid, 30);
-  ctx.fillStyle = "#dfe3ee"; ctx.font = `700 12px ${mono}`; ctx.fillText(t.ocean, mid + (cw - mid) / 2, seaY + 46 + 20);
-  ctx.fillStyle = "#c8ccd8"; ctx.font = `10.5px ${mono}`; ctx.fillText(t.basalt, mid + (cw - mid) / 2, seaY + 46 + 34);
+  ctx.fillStyle = "#eef1f8"; ctx.font = `700 11px ${mono}`; ctx.textAlign = "center";
+  ctx.fillText(t.ocean + " · " + t.basalt, mid + (cw - mid) / 2, seaY + 46 + 19);
   // mantle beneath
   const manY = seaY + 150;
   const mg = ctx.createLinearGradient(0, manY, 0, H); mg.addColorStop(0, "#b5652f"); mg.addColorStop(1, "#7a3f1c");
