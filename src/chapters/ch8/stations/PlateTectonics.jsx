@@ -51,7 +51,7 @@ const STR = {
   },
 };
 
-function drawBoundary(ctx, cw, H, kind, tt) {
+function drawBoundary(ctx, cw, H, kind, tt, shear) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw / 2, midY = H / 2;
   const plateH = 46, off = Math.sin(tt * 0.04) * 8;
@@ -86,12 +86,32 @@ function drawBoundary(ctx, cw, H, kind, tt) {
     ctx.beginPath(); ctx.moveTo(cx + 40, midY - 12); ctx.lineTo(cx + 8, midY + 6); ctx.stroke();
     ctx.fillStyle = C.danger; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("destroyed ↓", cx + 60, midY + 30);
   } else {
-    // transform: two plates offset, sliding opposite (into/out of page shown as horizontal shear)
-    drawPlate(20, midY - plateH / 2 - 2, cx - 20, 0);
-    ctx.save(); ctx.translate(0, off); drawPlate(cx, midY + plateH / 2 + 2, cx - 20, 0); ctx.restore();
-    ctx.strokeStyle = C.violet; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.moveTo(cx, midY - plateH); ctx.lineTo(cx, midY + plateH); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = C.violet; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("← grinding past →", cx, midY - plateH - 6);
+    // transform fault (top-down map view): a vertical fault at cx. A reference
+    // marker (a straight road) crossing the fault is offset by the accumulated
+    // slip — the offset grows with the slider (shear, in pixels).
+    const fx = cx, blockH = 110, top = midY - blockH / 2;
+    ctx.fillStyle = "#b98a55"; ctx.fillRect(0, top, fx, blockH);
+    ctx.fillStyle = "#a67c47"; ctx.fillRect(fx, top, cw - fx, blockH);
+    const half = (shear || 0) / 2;
+    // the reference road, split and offset across the fault by the slip
+    ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(14, midY - half); ctx.lineTo(fx, midY - half); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx, midY + half); ctx.lineTo(cw - 14, midY + half); ctx.stroke();
+    // dashed line showing the offset at the fault
+    if (half > 1) {
+      ctx.strokeStyle = "rgba(255,207,107,0.5)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(fx, midY - half); ctx.lineTo(fx, midY + half); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // the fault line
+    ctx.strokeStyle = C.violet; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(fx, top); ctx.lineTo(fx, top + blockH); ctx.stroke(); ctx.setLineDash([]);
+    // motion arrows: left block slides up, right block slides down
+    ctx.strokeStyle = C.cool; ctx.fillStyle = C.cool; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(fx - 42, midY + 18); ctx.lineTo(fx - 42, midY - 18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx - 42, midY - 18); ctx.lineTo(fx - 47, midY - 10); ctx.lineTo(fx - 37, midY - 10); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(fx + 42, midY - 18); ctx.lineTo(fx + 42, midY + 18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx + 42, midY + 18); ctx.lineTo(fx + 47, midY + 10); ctx.lineTo(fx + 37, midY + 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C.violet; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("← grinding past →", cx, top - 6);
   }
 }
 
@@ -106,18 +126,21 @@ export function PlateTectonics() {
   const [years, setYears] = useState(140);
 
   const slip = (RATE * years) / 100; // metres
+  const shearPx = Math.min(slip / 15, 1) * 74; // fault offset in px, ∝ slider
 
   useEffect(() => {
     const c = canRef.current;
     if (!c) return;
     const ctx = setupCanvas(c, cw, H);
-    const animated = kind === "rift" || kind === "transform";
-    if (reduceMotion || !animated) { drawBoundary(ctx, cw, H, kind, 0); return; }
-    let raf, tt = 0;
-    const loop = () => { tt += 1; drawBoundary(ctx, cw, H, kind, tt); raf = requestAnimationFrame(loop); };
-    loop();
-    return () => cancelAnimationFrame(raf);
-  }, [cw, kind, lang]);
+    // Only the rift animates; the transform's slip is driven by the slider.
+    if (kind === "rift" && !reduceMotion) {
+      let raf, tt = 0;
+      const loop = () => { tt += 1; drawBoundary(ctx, cw, H, kind, tt, 0); raf = requestAnimationFrame(loop); };
+      loop();
+      return () => cancelAnimationFrame(raf);
+    }
+    drawBoundary(ctx, cw, H, kind, 0, shearPx);
+  }, [cw, kind, lang, shearPx]);
 
   return (
     <div ref={wrapRef} style={styles.realmGrid}>
@@ -151,18 +174,21 @@ export function PlateTectonics() {
         </div>
         <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5, marginTop: 6 }}>{lang === "ja" ? BOUND[kind].ja_t : BOUND[kind].en_t}</p>
 
-        {/* San Andreas calculator */}
-        <div style={{ marginTop: 12, border: `1px solid ${C.border}`, borderRadius: 12, background: "rgba(8,12,26,0.6)", padding: "12px 16px" }}>
-          <div style={{ fontFamily: mono, fontSize: 12.5, letterSpacing: 1, color: C.violet, marginBottom: 8 }}>{t.sanTitle}</div>
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 8 }}>
-            <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.rateL}</span><div style={{ fontFamily: mono, fontSize: 16, color: C.cool }}>{RATE} {t.mPerYr}</div></div>
-            <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.yearsL}</span><div style={{ fontFamily: mono, fontSize: 16, color: C.text }}>{years} {t.yr}</div></div>
-            <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.slipL}</span><div style={{ fontFamily: mono, fontSize: 22, color: C.sun }}>{slip.toFixed(1)} {t.m}</div></div>
+        {/* San Andreas calculator — only for the transform fault; the slider
+            drives the fault offset drawn above */}
+        {kind === "transform" && (
+          <div style={{ marginTop: 12, border: `1px solid ${C.borderBright}`, borderRadius: 12, background: "rgba(8,12,26,0.6)", padding: "12px 16px" }}>
+            <div style={{ fontFamily: mono, fontSize: 12.5, letterSpacing: 1, color: C.violet, marginBottom: 8 }}>{t.sanTitle}</div>
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 8 }}>
+              <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.rateL}</span><div style={{ fontFamily: mono, fontSize: 16, color: C.cool }}>{RATE} {t.mPerYr}</div></div>
+              <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.yearsL}</span><div style={{ fontFamily: mono, fontSize: 16, color: C.text }}>{years} {t.yr}</div></div>
+              <div><span style={{ fontFamily: mono, fontSize: 11, color: C.faint }}>{t.slipL}</span><div style={{ fontFamily: mono, fontSize: 22, color: C.sun }}>{slip.toFixed(1)} {t.m}</div></div>
+            </div>
+            <input type="range" min={0} max={300} step={5} value={years} onChange={(e) => setYears(parseInt(e.target.value))} style={styles.range} />
           </div>
-          <input type="range" min={0} max={300} step={5} value={years} onChange={(e) => setYears(parseInt(e.target.value))} style={styles.range} />
-        </div>
+        )}
 
-        <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>
+        {kind === "transform" && <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>}
       </div>
     </div>
   );

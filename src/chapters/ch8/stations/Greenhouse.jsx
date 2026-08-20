@@ -41,6 +41,19 @@ const STR = {
   },
 };
 
+/* a straight arrow whose head sits exactly at (x,y), pointing along (dx,dy) */
+function arrow(ctx, x, y, dx, dy, len, col) {
+  const m = Math.hypot(dx, dy) || 1, ux = dx / m, uy = dy / m;
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x - ux * len, y - uy * len); ctx.lineTo(x, y); ctx.stroke();
+  const a = Math.atan2(uy, ux), s = 6;
+  ctx.fillStyle = col; ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - s * Math.cos(a - 0.4), y - s * Math.sin(a - 0.4));
+  ctx.lineTo(x - s * Math.cos(a + 0.4), y - s * Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+
 function draw(ctx, cw, H, on, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
@@ -56,25 +69,25 @@ function draw(ctx, cw, H, on, tt, lang) {
     for (let i = 0; i < 14; i++) { const x = 20 + i * (cw - 40) / 13; ctx.fillStyle = "rgba(201,139,255,0.6)"; ctx.beginPath(); ctx.arc(x, bandY + 23 + Math.sin(tt * 0.03 + i) * 4, 3, 0, Math.PI * 2); ctx.fill(); }
     ctx.fillStyle = C.violet; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText("CO₂ · CH₄ · H₂O", 20, bandY - 6);
   }
-  // incoming sunlight (yellow) — passes through
-  const sp = (tt * 2) % 60;
+  // incoming sunlight (yellow) — steady diagonal arrows falling to the ground
+  const dxS = 0.4, dyS = 1;
   for (let i = 0; i < 4; i++) {
-    const x = 60 + i * (cw - 120) / 3;
-    ctx.strokeStyle = "#ffd23d"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x - 30, 0 + sp); ctx.lineTo(x, 30 + sp); ctx.stroke();
-    ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.moveTo(x, 30 + sp); ctx.lineTo(x - 6, 24 + sp); ctx.lineTo(x - 12, 32 + sp); ctx.closePath(); ctx.fill();
+    const baseX = 70 + i * (cw - 140) / 3;
+    const tipY = (tt * 2.2 + i * (groundY / 4)) % (groundY + 30);
+    if (tipY > groundY - 6) continue; // arrived / absorbed at the ground
+    const tipX = baseX + tipY * (dxS / dyS);
+    arrow(ctx, tipX, tipY, dxS, dyS, 22, "#ffd23d");
   }
   // ground
   ctx.fillStyle = on ? "#c96b3a" : "#6b5a45"; ctx.fillRect(0, groundY, cw, 34);
-  // outgoing infrared (red) — trapped by band if on
+  // outgoing infrared (red) — straight vertical streaks rising from the ground
+  const ceiling = on ? bandY + 46 : -12; // trapped at the gas band if greenhouse ON
+  const travel = groundY - ceiling;
   for (let i = 0; i < 5; i++) {
-    const x = 45 + i * (cw - 90) / 4;
-    const rise = (tt * 1.6 + i * 12) % 90;
-    const topY = groundY - rise;
-    const blocked = on && topY < bandY + 46;
-    ctx.strokeStyle = "#ff6b6b"; ctx.globalAlpha = blocked ? 0.5 : 1; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x, groundY); ctx.lineTo(x + 6, clamp(topY, blocked ? bandY + 46 : -20, groundY)); ctx.stroke();
-    ctx.globalAlpha = 1;
+    const x = 55 + i * (cw - 110) / 4;
+    const tipY = groundY - ((tt * 1.6 + i * (travel / 5)) % travel);
+    const blocked = on && tipY <= bandY + 47;
+    arrow(ctx, x, Math.max(tipY, ceiling), 0, -1, 20, blocked ? "rgba(255,107,107,0.6)" : "#ff6b6b");
   }
   if (on) { ctx.fillStyle = C.danger; ctx.font = `10px ${mono}`; ctx.textAlign = "right"; ctx.fillText(t.trapped, cw - 16, bandY + 60); }
 }
