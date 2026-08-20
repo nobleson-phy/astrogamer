@@ -128,22 +128,26 @@ function drawKT(ctx, cw, H, tt) {
     }
     // crater dimple
     ctx.fillStyle = "#5a4a38"; ctx.beginPath(); ctx.ellipse(impactX, groundY + 2, 24, 6, 0, 0, Math.PI * 2); ctx.fill();
-    // 3) ejecta strewn up and out, arcing back down under gravity
+    // 3) ejecta strewn up and OUTWARD across the whole frame — some particles
+    //    reach both far edges, portraying a planet-wide (global) blanket.
     if (p < EJECTA_END) {
       const r = ktRng(9173);
       const span = (p - FALL) / (EJECTA_END - FALL); // 0..1 across ejecta phase
-      for (let i = 0; i < 30; i++) {
-        const ang = -Math.PI / 2 + (r() - 0.5) * 2.1;   // upward spread
-        const spd = 90 + r() * 130;
-        const life = 0.75 + r() * 0.25;
+      const N = 46;
+      for (let i = 0; i < N; i++) {
+        // deterministic fan: destinations spread evenly across the full width,
+        // so the extremes always reach the left (x≈4) and right (x≈cw-4) edges.
+        let targetX = 4 + (i / (N - 1)) * (cw - 8) + (r() - 0.5) * 12;
+        targetX = Math.max(4, Math.min(cw - 4, targetX));
+        const dist = Math.abs(targetX - impactX) / (cw / 2); // 0 near impact … ~1 at edges
+        const life = 0.55 + 0.4 * Math.min(1, dist) + r() * 0.06; // farther flies longer
         const k = span / life;
         if (k > 1) continue;
-        const vx = Math.cos(ang) * spd, vy = Math.sin(ang) * spd;
-        const px = impactX + vx * k * 1.3;
-        const py = groundY + (vy * k + 150 * k * k) * 1.3;   // projectile arc
-        if (py > groundY + 2) continue;
+        const x = impactX + (targetX - impactX) * (1 - (1 - k) * (1 - k)); // ease-out
+        const arcH = 24 + (0.35 + Math.min(1, dist) * 0.65) * (0.6 + r() * 0.4) * (H * 0.55);
+        const y = groundY - arcH * 4 * k * (1 - k); // up then back to the ground
         ctx.fillStyle = "rgba(205,195,165,0.9)";
-        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
       }
     }
     // 4) global iridium layer fades in only after the impact
