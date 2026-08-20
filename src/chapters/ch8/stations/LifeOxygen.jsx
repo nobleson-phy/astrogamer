@@ -91,23 +91,72 @@ function drawIce(ctx, cw, H, tt) {
   ctx.fillText("axis tilt slowly wobbles → ice ages", cx, H - 14);
 }
 
+function ktRng(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; }
+
+/* Phased K–T sequence: the asteroid falls, impacts (flash + ejecta thrown up),
+   then the global iridium layer settles in — the layer only appears AFTER impact. */
 function drawKT(ctx, cw, H, tt) {
   ctx.clearRect(0, 0, cw, H);
   const groundY = H - 40;
-  // ground with iridium layer
+  const impactX = cw * 0.44;
+  const CYCLE = 300;
+  const p = (tt % CYCLE) / CYCLE;      // 0..1 over the cycle
+  const FALL = 0.40, EJECTA_END = 0.74;
+  // ground
   ctx.fillStyle = "#6b5a45"; ctx.fillRect(0, groundY, cw, 40);
-  ctx.fillStyle = "rgba(120,120,140,0.9)"; ctx.fillRect(0, groundY, cw, 5);
-  ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText("global iridium layer", 12, groundY + 20);
-  // incoming asteroid
-  const p = (tt * 0.01) % 1;
-  const ax = 40 + p * (cw * 0.5), ay = 20 + p * (groundY - 30);
-  ctx.strokeStyle = "rgba(255,180,120,0.6)"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(ax, ay); ctx.stroke();
-  const rg = ctx.createRadialGradient(ax, ay, 1, ax, ay, 10);
-  rg.addColorStop(0, "#fff2c0"); rg.addColorStop(1, "#ff6b3a");
-  ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(ax, ay, 8, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = C.danger; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
-  ctx.fillText("65 Mya · end of the Cretaceous", cw / 2, 20);
+  ctx.fillText("65 Mya · end of the Cretaceous", cw / 2, 18);
+
+  if (p < FALL) {
+    // 1) asteroid streaks down toward the ground
+    const f = p / FALL;
+    const sx = impactX - cw * 0.34, sy = 26;
+    const ax = sx + (impactX - sx) * f, ay = sy + (groundY - sy) * f;
+    ctx.strokeStyle = "rgba(255,180,120,0.5)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ax, ay); ctx.stroke();
+    const rg = ctx.createRadialGradient(ax, ay, 1, ax, ay, 9);
+    rg.addColorStop(0, "#fff2c0"); rg.addColorStop(1, "#ff6b3a");
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(ax, ay, 8, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // 2) impact flash
+    const et = p - FALL;
+    if (et < 0.08) {
+      const fa = 1 - et / 0.08;
+      const fg = ctx.createRadialGradient(impactX, groundY, 2, impactX, groundY, 70);
+      fg.addColorStop(0, `rgba(255,240,180,${0.85 * fa})`); fg.addColorStop(1, "rgba(255,120,60,0)");
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(impactX, groundY, 70, 0, Math.PI * 2); ctx.fill();
+    }
+    // crater dimple
+    ctx.fillStyle = "#5a4a38"; ctx.beginPath(); ctx.ellipse(impactX, groundY + 2, 24, 6, 0, 0, Math.PI * 2); ctx.fill();
+    // 3) ejecta strewn up and out, arcing back down under gravity
+    if (p < EJECTA_END) {
+      const r = ktRng(9173);
+      const span = (p - FALL) / (EJECTA_END - FALL); // 0..1 across ejecta phase
+      for (let i = 0; i < 30; i++) {
+        const ang = -Math.PI / 2 + (r() - 0.5) * 2.1;   // upward spread
+        const spd = 90 + r() * 130;
+        const life = 0.75 + r() * 0.25;
+        const k = span / life;
+        if (k > 1) continue;
+        const vx = Math.cos(ang) * spd, vy = Math.sin(ang) * spd;
+        const px = impactX + vx * k * 1.3;
+        const py = groundY + (vy * k + 150 * k * k) * 1.3;   // projectile arc
+        if (py > groundY + 2) continue;
+        ctx.fillStyle = "rgba(205,195,165,0.9)";
+        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // 4) global iridium layer fades in only after the impact
+    const la0 = FALL + 0.16;
+    const layerAlpha = Math.max(0, Math.min(1, (p - la0) / (1 - la0)));
+    if (layerAlpha > 0) {
+      ctx.globalAlpha = layerAlpha;
+      ctx.fillStyle = "rgba(150,150,172,0.95)"; ctx.fillRect(0, groundY, cw, 5);
+      ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "left";
+      ctx.fillText("global iridium layer", 12, groundY + 20);
+      ctx.globalAlpha = 1;
+    }
+  }
 }
 
 export function LifeOxygen() {
@@ -127,7 +176,7 @@ export function LifeOxygen() {
     if (reduceMotion || !animated) {
       if (topic === "oxygen") drawTimeline(ctx, cw, H, t);
       else if (topic === "ice") drawIce(ctx, cw, H, 0);
-      else drawKT(ctx, cw, H, 0);
+      else drawKT(ctx, cw, H, 290); // settled post-impact frame (iridium layer visible)
       return;
     }
     let raf, tt = 0;
