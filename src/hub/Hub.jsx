@@ -73,6 +73,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch7/index.html",
   },
+  {
+    n: 8,
+    title: { en: "Earth as a Planet", ja: "惑星としての地球" },
+    blurb: {
+      en: "Meet our own world as an astronomer sees it — a layered, magnetic interior read by seismic waves, drifting continents, a living atmosphere and greenhouse, and a four-billion-year story of oxygen, ice ages and impacts.",
+      ja: "天文学者の目で私たち自身の世界を見よう——地震波で読み解く層状で磁気をもつ内部、移動する大陸、生きた大気と温室効果、そして酸素・氷河期・衝突をめぐる40億年の物語。",
+    },
+    href: "chapters/ch8/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
