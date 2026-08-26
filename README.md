@@ -22,6 +22,7 @@ The landing page lists the course chapters. Available now:
 6. **Astronomical Instruments** — the telescope as a light bucket, lenses versus mirrors, focus arrangements, seeing and adaptive optics, CCD detectors and cooling, interferometry, and the great observatories from Hubble to JWST to Rubin.
 7. **An Introduction to the Solar System** — the Sun's 99.8% of the mass, terrestrial versus giant planets, asteroids and comets as chemical fossils, differentiation, radioactive dating, reading surfaces, the solar nebula, and the exceptions that break the rules.
 8. **Earth as a Planet** — the layered interior and its magnetic core, seismic sounding, the crust and rock cycle, plate tectonics, the atmosphere and its layers, the greenhouse effect, where our carbon and water hide, and four billion years of life, oxygen, ice ages and impacts.
+9. **Cratered Worlds** — the Moon and Mercury: the lunar highlands and maria, the physics of impact cratering, dating by craters, regolith and polar ice, the Giant Impact, and Mercury's giant iron core, 3:2 spin–orbit day, and shrinking crust.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
