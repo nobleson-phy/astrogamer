@@ -82,6 +82,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch8/index.html",
   },
+  {
+    n: 9,
+    title: { en: "Cratered Worlds", ja: "クレーターの世界" },
+    blurb: {
+      en: "Explore the Moon and Mercury — airless, cratered worlds that preserve the solar system's violent youth. Meet the lunar highlands and maria, the physics of impacts, polar ice, the Giant Impact, and Mercury's giant iron core.",
+      ja: "月と水星を探ろう——太陽系の激しい若さを保つ、空気のないクレーターの世界。月の高地と海、衝突の物理、極の氷、ジャイアント・インパクト、そして水星の巨大な鉄の核に出会おう。",
+    },
+    href: "chapters/ch9/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
