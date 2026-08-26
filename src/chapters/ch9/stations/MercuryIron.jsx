@@ -74,30 +74,40 @@ function drawCores(ctx, cw, H, t, lang) {
 function drawStrip(ctx, cw, H, prog, t, lang) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw * 0.4, cy = H / 2, R = 56;
-  const coreR = R * Math.sqrt(0.35); // before stripping, core is smaller fraction
-  // mantle shrinks as prog rises (stripped away)
-  const mantleR = R * (1 - prog * 0.5);
+  const coreR = R * Math.sqrt(0.35); // before stripping, core is a smaller fraction
+  const IMPACT = 0.45;                          // impactor reaches the planet here
+  const post = Math.max(0, (prog - IMPACT) / (1 - IMPACT)); // 0..1 AFTER impact only
+  // impact point on the upper-right of the planet
+  const ipx = cx + R * 0.5, ipy = cy - R * 0.55;
+  // mantle stays full size until impact, then shrinks as it is stripped away
+  const mantleR = R * (1 - post * 0.5);
   ctx.fillStyle = "#6b6355"; ctx.beginPath(); ctx.arc(cx, cy, mantleR, 0, Math.PI * 2); ctx.fill();
   const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, coreR);
   g.addColorStop(0, "#ffd27a"); g.addColorStop(1, "#e89a3c");
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, mantleR, 0, Math.PI * 2); ctx.stroke();
-  // impactor / ejected rock
-  if (prog > 0.05 && prog < 0.6) {
-    const f = (prog - 0.05) / 0.55;
-    const ix = cw * 0.92 - f * (cw * 0.92 - (cx + R)); const iy = cy - 30 + f * 30;
+  // 1) BEFORE impact: the impactor streaks in toward the planet
+  if (prog < IMPACT) {
+    const f = prog / IMPACT;
+    const ix = cw * 0.92 + (ipx - cw * 0.92) * f, iy = (cy - 48) + (ipy - (cy - 48)) * f;
+    ctx.strokeStyle = "rgba(255,150,90,0.4)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cw * 0.92, cy - 48); ctx.lineTo(ix, iy); ctx.stroke();
     ctx.fillStyle = "#c96b3a"; ctx.beginPath(); ctx.arc(ix, iy, 12, 0, Math.PI * 2); ctx.fill();
-  }
-  if (prog > 0.3) {
-    // sprayed mantle debris flying off
-    const r2 = ((prog - 0.3) / 0.7);
-    for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; const d = R + r2 * 90; ctx.fillStyle = "rgba(150,140,120,0.7)"; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 2, 0, Math.PI * 2); ctx.fill(); }
+  } else {
+    // 2) impact flash
+    if (post < 0.18) {
+      const fa = 1 - post / 0.18;
+      const fg = ctx.createRadialGradient(ipx, ipy, 2, ipx, ipy, 46);
+      fg.addColorStop(0, `rgba(255,240,180,${0.8 * fa})`); fg.addColorStop(1, "rgba(255,120,60,0)");
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(ipx, ipy, 46, 0, Math.PI * 2); ctx.fill();
+    }
+    // 3) AFTER impact: sprayed mantle debris flies off in all directions
+    for (let i = 0; i < 22; i++) { const a = (i / 22) * Math.PI * 2; const d = R + post * 95; ctx.fillStyle = `rgba(150,140,120,${0.85 * (1 - post * 0.4)})`; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 2, 0, Math.PI * 2); ctx.fill(); }
   }
   // labels
   ctx.fillStyle = "#ffd27a"; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.core, cx, cy + 3);
   ctx.fillStyle = C.faint; ctx.fillText(t.mantle, cx, cy + mantleR + 14);
-  // resulting metal fraction rises toward 60%
-  const frac = Math.round((35 + prog * 25));
+  // resulting metal fraction rises toward 60% only as the mantle is removed
+  const frac = Math.round(35 + post * 25);
   ctx.fillStyle = C.sun; ctx.font = `700 15px ${mono}`; ctx.textAlign = "right"; ctx.fillText("core = " + frac + "% of mass", cw - 16, 26);
 }
 
