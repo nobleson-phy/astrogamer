@@ -91,6 +91,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch9/index.html",
   },
+  {
+    n: 10,
+    title: { en: "Earthlike Planets: Venus and Mars", ja: "地球型惑星：金星と火星" },
+    blurb: {
+      en: "Visit our sister worlds — Venus, a veiled inferno crushed under 90 bars of CO₂ and a runaway greenhouse, and Mars, a frozen desert of rust, giant volcanoes, and vanished water — and see why three similar planets took such different paths.",
+      ja: "姉妹の世界を訪ねよう——90気圧のCO₂と暴走温室効果に押しつぶされた、ベールの灼熱・金星と、錆と巨大火山と失われた水の凍った砂漠・火星——そして似た3つの惑星がなぜこれほど異なる道を歩んだのかを見よう。",
+    },
+    href: "chapters/ch10/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
