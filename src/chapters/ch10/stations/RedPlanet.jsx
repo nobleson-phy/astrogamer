@@ -51,16 +51,23 @@ function drawMars(ctx, cw, H, tt, lang) {
   ctx.save();
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = g; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
-  // rotating surface markings
+  // rotating surface markings — spot properties fixed per spot (so they don't
+  // flicker), then culled to the visible near hemisphere by the z-axis.
   const r = rng(7);
   const spin = tt * 0.01;
-  for (let i = 0; i < 40; i++) {
-    const lon = (i / 40) * Math.PI * 2 + spin, lat = (r() - 0.5) * Math.PI;
-    const sx = Math.cos(lat) * Math.sin(lon);
-    if (sx < 0) continue; // back side
-    const x = cx + sx * R, y = cy + Math.sin(lat) * R * 0.96;
-    ctx.fillStyle = `rgba(${90 + r() * 40 | 0},${40 + r() * 20 | 0},${20},0.5)`;
-    ctx.beginPath(); ctx.arc(x, y, 3 + r() * 8, 0, Math.PI * 2); ctx.fill();
+  for (let i = 0; i < 56; i++) {
+    const lon0 = r() * Math.PI * 2;      // fixed longitude
+    const lat = Math.asin(r() * 2 - 1);  // uniform latitude over the sphere
+    const size = 3 + r() * 7;
+    const shade = 0.35 + r() * 0.25;
+    const lon = lon0 + spin;             // rotate with time
+    const cl = Math.cos(lat);
+    const pz = cl * Math.cos(lon);       // toward the viewer
+    if (pz <= 0) continue;               // on the far side — hidden
+    const px = cl * Math.sin(lon);
+    const x = cx + px * R, y = cy + Math.sin(lat) * R;
+    ctx.fillStyle = `rgba(120,55,30,${shade})`;
+    ctx.beginPath(); ctx.arc(x, y, size * (0.45 + 0.55 * pz), 0, Math.PI * 2); ctx.fill();
   }
   // polar caps
   ctx.fillStyle = "rgba(240,245,255,0.85)"; ctx.beginPath(); ctx.ellipse(cx, cy - R * 0.9, R * 0.5, R * 0.14, 0, 0, Math.PI * 2); ctx.fill();
