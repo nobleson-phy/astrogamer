@@ -43,68 +43,93 @@ const STR = {
   },
 };
 
-/* standard phase disc: illum 0 = new (dark) … 0.5 = half … 1 = full, lit from the right */
-function drawVenusPhase(ctx, x, y, r, illum) {
+/* phase disc: illum 0 = new (dark) … 0.5 = half … 1 = full. The lit limb points
+   along `lightAngle` (screen radians toward the Sun), so the crescent always faces
+   the Sun no matter where Venus sits on screen. */
+function drawVenusPhase(ctx, x, y, r, illum, lightAngle = 0) {
   illum = Math.max(0, Math.min(1, illum));
   ctx.save();
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = "#3a352c"; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
-  ctx.fillStyle = "#e8c98a";
+  ctx.translate(x, y);
+  ctx.rotate(lightAngle);          // +x now points at the Sun (the lit side)
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = "#2f2a22"; ctx.fillRect(-r, -r, 2 * r, 2 * r);
+  ctx.fillStyle = "#ffe6a8";
   ctx.beginPath();
-  ctx.arc(x, y, r, -Math.PI / 2, Math.PI / 2, false); // lit right semicircle
+  ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false); // lit hemisphere toward the Sun
   if (illum >= 0.5) {
-    const ex = r * (2 * illum - 1); // bulge into the left (gibbous → full)
-    ctx.ellipse(x, y, ex, r, 0, Math.PI / 2, -Math.PI / 2, false);
+    const ex = r * (2 * illum - 1); // bulge across (gibbous → full)
+    ctx.ellipse(0, 0, ex, r, 0, Math.PI / 2, -Math.PI / 2, false);
   } else {
-    const ex = r * (1 - 2 * illum); // terminator cuts into the right (crescent)
-    ctx.ellipse(x, y, ex, r, 0, -Math.PI / 2, Math.PI / 2, false);
+    const ex = r * (1 - 2 * illum); // terminator cuts in (crescent)
+    ctx.ellipse(0, 0, ex, r, 0, -Math.PI / 2, Math.PI / 2, false);
   }
   ctx.fill();
   ctx.restore();
-  ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = "rgba(150,175,230,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+/* illuminated fraction seen from Earth, from the Sun–Venus–Earth geometry */
+function phaseFrom(vx, vy, sx, sy, ex, ey) {
+  const s = Math.hypot(sx - vx, sy - vy) || 1, e = Math.hypot(ex - vx, ey - vy) || 1;
+  const dot = ((sx - vx) * (ex - vx) + (sy - vy) * (ey - vy)) / (s * e); // cos(Sun–Venus–Earth)
+  return { illum: (1 + dot) / 2, lightAngle: Math.atan2(sy - vy, sx - vx) };
+}
+
+function drawSun(ctx, x, y, r) {
+  const sg = ctx.createRadialGradient(x, y, 2, x, y, r); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill();
+}
+/* draw an inset showing the phase Earth actually sees, magnified */
+function drawInset(ctx, cw, H, illum, lightAngle, lang, label, ok) {
+  const ix = cw - 58, iy = 52, ir = 26;
+  ctx.fillStyle = "rgba(8,12,26,0.7)"; ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(ix, iy, ir + 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  drawVenusPhase(ctx, ix, iy, ir, illum, lightAngle);
+  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText("from Earth", ix, iy + ir + 18);
 }
 
 function draw(ctx, cw, H, model, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const cx = cw * 0.5, cy = H * 0.52;
-  // Sun / Earth positions differ by model
+  const cy = H * 0.52;
+  const va = tt * 0.02;
   if (model === "ptolemy") {
-    // Earth at center, Venus on an epicycle between Earth and Sun (always same side)
-    const ex = cx, ey = cy;
-    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(ex, ey, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Earth", ex, ey + 26);
-    // deferent direction toward the Sun (kept to the right)
-    const sx = cx + cw * 0.34, sy = cy;
-    const sg = ctx.createRadialGradient(sx, sy, 2, sx, sy, 20); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
-    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 20, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI * 2); ctx.fill();
-    // Venus epicycle between Earth and Sun
-    const mid = (ex + sx) / 2;
-    const ep = 26; const va = tt * 0.02;
+    // Earth at the centre; the Sun and Venus's epicycle both sit on a line from Earth.
+    const ex = cw * 0.24, ey = cy;
+    const sx = cw * 0.82, sy = cy;
+    const mid = (ex + sx) / 2;                 // epicycle centre, on the Earth–Sun line
+    const ep = Math.min((sx - ex) * 0.26, H * 0.32);
     const vx = mid + Math.cos(va) * ep, vy = cy + Math.sin(va) * ep;
-    ctx.strokeStyle = "rgba(150,175,230,0.25)"; ctx.beginPath(); ctx.arc(mid, cy, ep, 0, Math.PI * 2); ctx.stroke();
-    // Venus always shows a crescent (lit side faces Sun, we see mostly the dark side)
-    drawVenusPhase(ctx, vx, vy, 12, 0.18);
-    ctx.fillStyle = C.danger; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.onlyCrescent, cx, H - 14);
+    // deferent line + epicycle
+    ctx.strokeStyle = "rgba(150,175,230,0.2)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(sx, sy); ctx.stroke();
+    ctx.strokeStyle = "rgba(150,175,230,0.28)"; ctx.beginPath(); ctx.arc(mid, cy, ep, 0, Math.PI * 2); ctx.stroke();
+    // Earth + Sun
+    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(ex, ey, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Earth", ex, ey + 26);
+    drawSun(ctx, sx, sy, 20); ctx.fillStyle = C.sun; ctx.fillText("Sun", sx, sy + 34);
+    // Venus phase from geometry — because Venus never gets past the Sun, this is
+    // always a thin crescent lit toward the Sun (Ptolemy's fatal prediction).
+    const { illum, lightAngle } = phaseFrom(vx, vy, sx, sy, ex, ey);
+    drawVenusPhase(ctx, vx, vy, 13, illum, lightAngle);
+    drawInset(ctx, cw, H, illum, lightAngle, lang);
+    ctx.fillStyle = C.danger; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.onlyCrescent, cw * 0.42, H - 14);
   } else {
-    // Sun at center, Earth outside, Venus orbits Sun (full phases as it goes around)
-    const sx = cx, sy = cy;
-    const sg = ctx.createRadialGradient(sx, sy, 2, sx, sy, 22); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
-    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 22, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
-    // Earth far below
-    const exx = cx, eyy = cy + H * 0.42;
-    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(exx, Math.min(eyy, H - 8), 8, 0, Math.PI * 2); ctx.fill();
-    // Venus orbit
-    const orb = Math.min(cw * 0.28, H * 0.36);
-    ctx.strokeStyle = "rgba(150,175,230,0.25)"; ctx.beginPath(); ctx.arc(sx, sy, orb, 0, Math.PI * 2); ctx.stroke();
-    const va = tt * 0.02;
+    // Sun at the centre; Earth outside; Venus orbits the Sun → full range of phases.
+    const sx = cw * 0.5, sy = cy;
+    const exx = cw * 0.5, eyy = Math.min(cy + H * 0.42, H - 10);
+    const orb = Math.min(cw * 0.26, H * 0.34);
+    ctx.strokeStyle = "rgba(150,175,230,0.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, sy, orb, 0, Math.PI * 2); ctx.stroke();
+    drawSun(ctx, sx, sy, 20);
     const vx = sx + Math.cos(va) * orb, vy = sy + Math.sin(va) * orb;
-    // phase seen from Earth: illum depends on angle Sun-Venus-Earth; approximate with (1+cos)/2 relative to Earth direction
-    const illum = (1 - Math.cos(va)) / 2; // sweeps 0..1 (new → full) around the orbit
-    drawVenusPhase(ctx, vx, vy, 11, illum);
-    ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.fullRange, cx, H - 14);
+    const { illum, lightAngle } = phaseFrom(vx, vy, sx, sy, exx, eyy);
+    // sight line Earth → Venus
+    ctx.strokeStyle = "rgba(150,175,230,0.18)"; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(exx, eyy); ctx.lineTo(vx, vy); ctx.stroke(); ctx.setLineDash([]);
+    drawVenusPhase(ctx, vx, vy, 12, illum, lightAngle);
+    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(exx, eyy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Earth", exx, eyy - 12);
+    drawInset(ctx, cw, H, illum, lightAngle, lang);
+    ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.fullRange, cw * 0.5, 18);
   }
 }
 
