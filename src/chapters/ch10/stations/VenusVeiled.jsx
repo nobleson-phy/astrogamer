@@ -115,19 +115,19 @@ function draw(ctx, cw, H, model, tt, lang) {
     drawInset(ctx, cw, H, illum, lightAngle, lang);
     ctx.fillStyle = C.danger; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.onlyCrescent, cw * 0.42, H - 14);
   } else {
-    // Sun at the centre; Earth outside; Venus orbits the Sun → full range of phases.
-    const sx = cw * 0.5, sy = cy;
-    const exx = cw * 0.5, eyy = Math.min(cy + H * 0.42, H - 10);
-    const orb = Math.min(cw * 0.26, H * 0.34);
+    // Earth on the LEFT; the Sun to its right; Venus orbits the Sun → full range of phases.
+    const exx = cw * 0.12, eyy = cy;
+    const sx = cw * 0.56, sy = cy;
+    const orb = Math.min(cw * 0.24, H * 0.36);
     ctx.strokeStyle = "rgba(150,175,230,0.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, sy, orb, 0, Math.PI * 2); ctx.stroke();
-    drawSun(ctx, sx, sy, 20);
+    drawSun(ctx, sx, sy, 20); ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Sun", sx, sy + 34);
     const vx = sx + Math.cos(va) * orb, vy = sy + Math.sin(va) * orb;
     const { illum, lightAngle } = phaseFrom(vx, vy, sx, sy, exx, eyy);
     // sight line Earth → Venus
     ctx.strokeStyle = "rgba(150,175,230,0.18)"; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(exx, eyy); ctx.lineTo(vx, vy); ctx.stroke(); ctx.setLineDash([]);
     drawVenusPhase(ctx, vx, vy, 12, illum, lightAngle);
-    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(exx, eyy, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Earth", exx, eyy - 12);
+    ctx.fillStyle = "#5b8dee"; ctx.beginPath(); ctx.arc(exx, eyy, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Earth", exx, eyy + 26);
     drawInset(ctx, cw, H, illum, lightAngle, lang);
     ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.fullRange, cw * 0.5, 18);
   }
