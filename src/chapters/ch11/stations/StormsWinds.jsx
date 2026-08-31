@@ -46,6 +46,13 @@ const STR = {
   },
 };
 
+function hrng(s) { return () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; }
+function hexPath(ctx, cx, cy, r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI * 2 - Math.PI / 2 + rot; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.closePath();
+}
+
 function draw(ctx, cw, H, topic, tt) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw / 2, cy = H / 2;
@@ -60,19 +67,45 @@ function draw(ctx, cw, H, topic, tt) {
     ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("300+ years · wider than Earth", cx, H - 10);
   } else if (topic === "hexagon") {
-    // rotating hexagon around the pole
-    const R = Math.min(cw * 0.26, H * 0.38);
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(tt * 0.005);
-    for (let ring = 0; ring < 3; ring++) {
-      ctx.strokeStyle = `rgba(230,207,154,${0.4 + ring * 0.2})`; ctx.lineWidth = 2; ctx.beginPath();
-      for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI * 2 - Math.PI / 2; const rr = R * (1 - ring * 0.22); const x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-      ctx.stroke();
-    }
-    // polar vortex center
-    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, R * 0.3); g.addColorStop(0, "#c98a4a"); g.addColorStop(1, "rgba(230,207,154,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R * 0.3, 0, Math.PI * 2); ctx.fill();
+    // Saturn's north pole from above: a butterscotch banded disc with a blue
+    // hexagonal jet stream and a central polar vortex, à la Cassini.
+    const px = cx, py = cy - H * 0.04;                 // pole
+    const Rp = Math.min(cw * 0.55, H * 0.95);          // Saturn disc radius
+    const discY = py + Rp * 0.42;                      // disc centre below the pole
+    const rot = tt * 0.004;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, discY, Rp, 0, Math.PI * 2); ctx.clip();
+    const bg = ctx.createRadialGradient(px, py, 4, px, py, Rp * 1.1);
+    bg.addColorStop(0, "#dcc78e"); bg.addColorStop(0.5, "#e0c078"); bg.addColorStop(1, "#c49a52");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, cw, H);
+    // concentric zonal bands around the pole
+    for (let k = 1; k < 10; k++) { ctx.strokeStyle = k % 2 ? "rgba(196,160,96,0.45)" : "rgba(234,210,152,0.5)"; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(px, py, k * Rp * 0.085, 0, Math.PI * 2); ctx.stroke(); }
+    // sunlit limb brightening at the top-left
+    const lg = ctx.createLinearGradient(0, 0, cw * 0.6, H); lg.addColorStop(0, "rgba(255,250,230,0.25)"); lg.addColorStop(1, "rgba(255,250,230,0)");
+    ctx.fillStyle = lg; ctx.fillRect(0, 0, cw, H);
     ctx.restore();
-    ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("each side longer than Earth's diameter", cx, H - 10);
+    // hexagon jet stream
+    const rh = Math.min(cw * 0.2, H * 0.34);
+    ctx.save();
+    hexPath(ctx, px, py, rh, rot); ctx.clip();
+    const hb = ctx.createRadialGradient(px, py, 2, px, py, rh);
+    hb.addColorStop(0, "#8fc0dc"); hb.addColorStop(0.55, "#4f88b8"); hb.addColorStop(1, "#37648f");
+    ctx.fillStyle = hb; ctx.fillRect(px - rh, py - rh, 2 * rh, 2 * rh);
+    // stable turbulence speckle (seeded, so it doesn't flicker)
+    const r = hrng(71);
+    for (let i = 0; i < 90; i++) { const a = r() * 6.283, rr = Math.sqrt(r()) * rh; ctx.fillStyle = `rgba(210,232,244,${0.12 + r() * 0.22})`; ctx.beginPath(); ctx.arc(px + Math.cos(a) * rr, py + Math.sin(a) * rr, 1 + r() * 2.2, 0, 6.283); ctx.fill(); }
+    // central spiral vortex
+    ctx.strokeStyle = "rgba(232,246,255,0.55)"; ctx.lineWidth = 1.6; ctx.beginPath();
+    let started = false;
+    for (let s = 0; s < 220; s++) { const a = s * 0.13 + rot * 4; const rr = 1 + s * 0.055 * (rh / 60); if (rr > rh * 0.72) break; const x = px + Math.cos(a) * rr, y = py + Math.sin(a) * rr; started ? ctx.lineTo(x, y) : (ctx.moveTo(x, y), started = true); }
+    ctx.stroke();
+    ctx.restore();
+    // hexagon rim
+    ctx.strokeStyle = "rgba(232,246,255,0.5)"; ctx.lineWidth = 2; hexPath(ctx, px, py, rh, rot); ctx.stroke();
+    // rings grazing the right edge
+    ctx.strokeStyle = "rgba(222,202,152,0.55)"; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.ellipse(cw + 30, discY - Rp * 0.15, Rp * 0.95, Rp * 0.5, -0.5, Math.PI * 0.72, Math.PI * 1.18); ctx.stroke();
+    ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("each side longer than Earth's diameter", cx, H - 8);
   } else {
     // wind speed vs latitude bar chart, peaking at the equator ~1800
     const padL = 40, padR = 16, padT = 20, padB = 30, plotW = cw - padL - padR, plotH = H - padT - padB, y0 = H - padB;
