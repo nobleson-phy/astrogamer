@@ -24,6 +24,7 @@ The landing page lists the course chapters. Available now:
 8. **Earth as a Planet** — the layered interior and its magnetic core, seismic sounding, the crust and rock cycle, plate tectonics, the atmosphere and its layers, the greenhouse effect, where our carbon and water hide, and four billion years of life, oxygen, ice ages and impacts.
 9. **Cratered Worlds** — the Moon and Mercury: the lunar highlands and maria, the physics of impact cratering, dating by craters, regolith and polar ice, the Giant Impact, and Mercury's giant iron core, 3:2 spin–orbit day, and shrinking crust.
 10. **Earthlike Planets: Venus and Mars** — Venus's phases, crushing CO₂ air, runaway greenhouse and naked resurfaced crust; Mars's rust, giant volcanoes and canyons, water past and present; and the divergent fates of three sister worlds.
+11. **The Giant Planets** — the Grand Tour and its probes, the gas/ice/rock vocabulary, Jupiter's metallic-hydrogen interior, ammonia clouds and photochemistry, centuries-long storms and 1800 km/h winds, the tilted blue ice giants, faint distant sunlight, and why infrared detectors run cold.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
