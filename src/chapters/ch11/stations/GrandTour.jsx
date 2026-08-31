@@ -52,23 +52,20 @@ const STR = {
   },
 };
 
-/* Voyager 2 waypoints: Sun (bottom-left) then each planet farther out and higher,
-   so the trajectory clearly threads outward from one world to the next. */
-const WP = [
-  { x: 0.07, y: 0.88 },                                                   // Sun
-  { x: 0.30, y: 0.66, r: 16, col: "#e0a86a", en: "Jupiter", ja: "木星", yr: "1979" },
-  { x: 0.50, y: 0.46, r: 13, col: "#e8cf9a", en: "Saturn", ja: "土星", yr: "1981", ring: true },
-  { x: 0.72, y: 0.32, r: 10, col: "#a9dbe6", en: "Uranus", ja: "天王星", yr: "1986" },
-  { x: 0.92, y: 0.18, r: 10, col: "#5b7de0", en: "Neptune", ja: "海王星", yr: "1989" },
+/* Voyager 2's route is a smooth ARC: the Sun sits at one end (u=0) and each planet
+   lies farther along the same curve, so the craft sweeps outward past them all. */
+const PLANETS = [
+  { u: 0.27, r: 16, col: "#e0a86a", en: "Jupiter", ja: "木星", yr: "1979" },
+  { u: 0.50, r: 13, col: "#e8cf9a", en: "Saturn", ja: "土星", yr: "1981", ring: true },
+  { u: 0.73, r: 10, col: "#a9dbe6", en: "Uranus", ja: "天王星", yr: "1986" },
+  { u: 0.96, r: 10, col: "#5b7de0", en: "Neptune", ja: "海王星", yr: "1989" },
 ];
-function ptOnPath(prog, cw, H) {
-  // piecewise-linear along the waypoints, prog 0..1
-  const P = WP.map((p) => [p.x * cw, p.y * H]);
-  const segs = P.length - 1;
-  const s = Math.min(0.999, Math.max(0, prog)) * segs;
-  const i = Math.floor(s), f = s - i;
-  return [P[i][0] + (P[i + 1][0] - P[i][0]) * f, P[i][1] + (P[i + 1][1] - P[i][1]) * f];
+const ARC = { cx: 1.05, cy: 1.12, R: 1.02, a0: (196 * Math.PI) / 180, a1: (262 * Math.PI) / 180 };
+function arcPt(u, cw, H) {
+  const a = ARC.a0 + (ARC.a1 - ARC.a0) * u;
+  return [(ARC.cx + ARC.R * Math.cos(a)) * cw, (ARC.cy + ARC.R * Math.sin(a)) * H];
 }
+function ptOnPath(prog, cw, H) { return arcPt(Math.min(0.96, Math.max(0, prog) * 0.96), cw, H); }
 
 function drawSun(ctx, x, y, r) {
   const sg = ctx.createRadialGradient(x, y, 2, x, y, r); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
@@ -85,23 +82,23 @@ function drawBandedGlobe(ctx, x, y, r, cols, ring) {
 
 function drawVoyager(ctx, cw, H, prog, lang) {
   ctx.clearRect(0, 0, cw, H);
-  const [sx, sy] = [WP[0].x * cw, WP[0].y * H];
+  const [sx, sy] = arcPt(0, cw, H);
   drawSun(ctx, sx, sy, 16);
-  // trajectory curve through the waypoints
-  ctx.strokeStyle = "rgba(63,232,155,0.6)"; ctx.lineWidth = 2; ctx.setLineDash([]);
+  // trajectory: the arc itself
+  ctx.strokeStyle = "rgba(63,232,155,0.55)"; ctx.lineWidth = 2; ctx.setLineDash([]);
   ctx.beginPath();
-  for (let i = 0; i <= 100; i++) { const [x, y] = ptOnPath(i / 100, cw, H); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  for (let i = 0; i <= 100; i++) { const [x, y] = arcPt(i / 100, cw, H); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.stroke();
-  // planets along the path
-  WP.slice(1).forEach((p) => {
-    const px = p.x * cw, py = p.y * H;
+  // planets sitting on the arc
+  PLANETS.forEach((p) => {
+    const [px, py] = arcPt(p.u, cw, H);
     const g = ctx.createRadialGradient(px - p.r * 0.3, py - p.r * 0.3, 1, px, py, p.r);
     g.addColorStop(0, p.col); g.addColorStop(1, "rgba(0,0,0,0.3)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill();
     if (p.ring) { ctx.strokeStyle = "rgba(230,207,154,0.8)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, py, p.r + 7, (p.r + 7) * 0.34, -0.3, 0, Math.PI * 2); ctx.stroke(); }
     ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText((lang === "ja" ? p.ja : p.en) + " · " + p.yr, px, py - p.r - 6);
   });
-  // spacecraft
+  // spacecraft riding the arc
   const [cx, cy] = ptOnPath(prog, cw, H);
   ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = "rgba(63,232,155,0.7)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.stroke();
