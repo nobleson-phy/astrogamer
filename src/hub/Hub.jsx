@@ -100,6 +100,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch10/index.html",
   },
+  {
+    n: 11,
+    title: { en: "The Giant Planets", ja: "巨大惑星" },
+    blurb: {
+      en: "Journey to Jupiter, Saturn, Uranus and Neptune — worlds of hydrogen and ice with metallic-hydrogen hearts, ammonia clouds and centuries-old storms, a hexagon and 1800 km/h winds, and the tilted blue ice giants at the cold edge of sunlight.",
+      ja: "木星・土星・天王星・海王星への旅——金属水素の心臓、アンモニアの雲と何世紀も続く嵐、六角形と時速1800 kmの風をもつ水素と氷の世界、そして日光の冷たい果てにある傾いた青い氷の巨人。",
+    },
+    href: "chapters/ch11/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
