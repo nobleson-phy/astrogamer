@@ -17,7 +17,7 @@ import { InfoPanel } from "../../../shared/ui.jsx";
 
 const MISSIONS = {
   voyager: { en: "Voyager 2", ja: "ボイジャー2号",
-    en_t: "The one 'Grand Tour': flew past Jupiter (1979), Saturn (1981), Uranus (1986) and Neptune (1989). It remains the only spacecraft ever to visit the ice giants.", ja_t: "唯一の「グランドツアー」：木星（1979）・土星（1981）・天王星（1986）・海王星（1989）を通過。氷の巨人を訪れた唯一の探査機であり続ける。" },
+    en_t: "The one 'Grand Tour': flew past Jupiter (1979), Saturn (1981), Uranus (1986) and Neptune (1989), using each planet's gravity to slingshot to the next. It remains the only spacecraft ever to visit the ice giants.", ja_t: "唯一の「グランドツアー」：木星（1979）・土星（1981）・天王星（1986）・海王星（1989）を通過し、各惑星の重力で次へと弾き飛ばされた。氷の巨人を訪れた唯一の探査機であり続ける。" },
   galileo: { en: "Galileo probe", ja: "ガリレオ・プローブ",
     en_t: "On 7 December 1995 the Galileo mission dropped an entry probe by parachute into Jupiter's clouds, sampling the atmosphere directly for the first time.", ja_t: "1995年12月7日、ガリレオ探査機は突入プローブをパラシュートで木星の雲に投下し、初めて大気を直接測定した。" },
   cassini: { en: "Cassini", ja: "カッシーニ",
@@ -31,7 +31,7 @@ const STR = {
   en: {
     title: "Grand Tour & explorers",
     kind: "How we reached the outer worlds",
-    lede: "The giant planets are so far that a single, perfectly-timed trajectory let one craft visit them all. Trace Voyager 2's path, then meet the probes and the physicist who argued we should send robots first.",
+    lede: "The giant planets are so far that a single, perfectly-timed trajectory let one craft visit them all. Fly Voyager 2's slingshot path, then switch spacecraft to see the probes and the physicist who argued we should send robots first.",
     thread: "THE STORY BEGINS",
     threadText: "Beyond Mars lie four worlds unlike any we've met — vast balls of gas and ice. Everything we know of them we learned from a handful of robotic emissaries flung across the solar system.",
     key: "ONE CRAFT VISITED ALL FOUR GIANTS",
@@ -42,7 +42,7 @@ const STR = {
   ja: {
     title: "グランドツアーと探査機",
     kind: "外の世界へどう到達したか",
-    lede: "巨大惑星はあまりに遠く、完璧にタイミングを合わせた一つの軌道で、一機がすべてを訪れられました。ボイジャー2号の経路をたどり、探査機と、まずロボットを送るべきだと論じた物理学者に出会おう。",
+    lede: "巨大惑星はあまりに遠く、完璧にタイミングを合わせた一つの軌道で、一機がすべてを訪れられました。ボイジャー2号のスイングバイ経路を飛ばし、探査機を切り替えて、プローブと、まずロボットを送るべきだと論じた物理学者を見よう。",
     thread: "物語のはじまり",
     threadText: "火星の先には、これまで出会ったどれとも違う4つの世界——ガスと氷の巨大な球——があります。それらについて知ることのすべては、太陽系に放たれた一握りのロボット使節から学びました。",
     key: "一機が4つの巨人すべてを訪れた",
@@ -52,49 +52,130 @@ const STR = {
   },
 };
 
-const PLANETS = [
-  { fr: 0.20, r: 18, col: "#e0a86a", en: "Jupiter", ja: "木星", yr: "1979" },
-  { fr: 0.42, r: 15, col: "#e8cf9a", en: "Saturn", ja: "土星", yr: "1981" },
-  { fr: 0.66, r: 11, col: "#a9dbe6", en: "Uranus", ja: "天王星", yr: "1986" },
-  { fr: 0.88, r: 11, col: "#5b7de0", en: "Neptune", ja: "Neptune", yr: "1989" },
+/* Voyager 2 waypoints: Sun (bottom-left) then each planet farther out and higher,
+   so the trajectory clearly threads outward from one world to the next. */
+const WP = [
+  { x: 0.07, y: 0.88 },                                                   // Sun
+  { x: 0.30, y: 0.66, r: 16, col: "#e0a86a", en: "Jupiter", ja: "木星", yr: "1979" },
+  { x: 0.50, y: 0.46, r: 13, col: "#e8cf9a", en: "Saturn", ja: "土星", yr: "1981", ring: true },
+  { x: 0.72, y: 0.32, r: 10, col: "#a9dbe6", en: "Uranus", ja: "天王星", yr: "1986" },
+  { x: 0.92, y: 0.18, r: 10, col: "#5b7de0", en: "Neptune", ja: "海王星", yr: "1989" },
 ];
+function ptOnPath(prog, cw, H) {
+  // piecewise-linear along the waypoints, prog 0..1
+  const P = WP.map((p) => [p.x * cw, p.y * H]);
+  const segs = P.length - 1;
+  const s = Math.min(0.999, Math.max(0, prog)) * segs;
+  const i = Math.floor(s), f = s - i;
+  return [P[i][0] + (P[i + 1][0] - P[i][0]) * f, P[i][1] + (P[i + 1][1] - P[i][1]) * f];
+}
 
-function draw(ctx, cw, H, prog, lang) {
+function drawSun(ctx, x, y, r) {
+  const sg = ctx.createRadialGradient(x, y, 2, x, y, r); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill();
+}
+function drawBandedGlobe(ctx, x, y, r, cols, ring) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+  for (let i = 0; i < cols.length; i++) { ctx.fillStyle = cols[i]; const yy = y - r + (i / cols.length) * 2 * r; ctx.fillRect(x - r, yy, 2 * r, 2 * r / cols.length + 1); }
+  ctx.restore();
+  if (ring) { ctx.strokeStyle = "rgba(230,207,154,0.85)"; ctx.lineWidth = Math.max(1.5, r * 0.12); ctx.beginPath(); ctx.ellipse(x, y, r + r * 0.7, (r + r * 0.7) * 0.32, -0.3, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawVoyager(ctx, cw, H, prog, lang) {
   ctx.clearRect(0, 0, cw, H);
-  const x0 = 34, x1 = cw - 20, y = H * 0.5;
-  const X = (fr) => x0 + fr * (x1 - x0);
-  // Sun
-  const sg = ctx.createRadialGradient(x0, y, 2, x0, y, 16); sg.addColorStop(0, "#fff6d8"); sg.addColorStop(0.5, "#ffd23d"); sg.addColorStop(1, "rgba(255,158,44,0)");
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x0, y, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#ffd23d"; ctx.beginPath(); ctx.arc(x0, y, 7, 0, Math.PI * 2); ctx.fill();
-  // planets
-  PLANETS.forEach((p) => {
-    const px = X(p.fr);
-    const g = ctx.createRadialGradient(px - p.r * 0.3, y - p.r * 0.3, 1, px, y, p.r);
-    g.addColorStop(0, p.col); g.addColorStop(1, "rgba(0,0,0,0.3)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, y, p.r, 0, Math.PI * 2); ctx.fill();
-    if (p.en === "Saturn") { ctx.strokeStyle = "rgba(230,207,154,0.8)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, y, p.r + 8, (p.r + 8) * 0.34, -0.3, 0, Math.PI * 2); ctx.stroke(); }
-    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText((lang === "ja" ? p.ja : p.en) + " · " + p.yr, px, y + p.r + 16);
-  });
-  // Voyager path — a wavy line sweeping past each planet
-  ctx.strokeStyle = C.good; ctx.lineWidth = 2; ctx.beginPath();
-  for (let i = 0; i <= 120; i++) { const fr = i / 120; const xx = X(fr); const yy = y - 44 + Math.sin(fr * 11) * 30; i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }
+  const [sx, sy] = [WP[0].x * cw, WP[0].y * H];
+  drawSun(ctx, sx, sy, 16);
+  // trajectory curve through the waypoints
+  ctx.strokeStyle = "rgba(63,232,155,0.6)"; ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) { const [x, y] = ptOnPath(i / 100, cw, H); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.stroke();
-  // spacecraft position
-  const fr = prog; const cxs = X(fr), cys = y - 44 + Math.sin(fr * 11) * 30;
-  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cxs, cys, 3.5, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "rgba(63,232,155,0.6)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cxs, cys, 7, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = C.good; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText("Voyager 2", 30, 18);
+  // planets along the path
+  WP.slice(1).forEach((p) => {
+    const px = p.x * cw, py = p.y * H;
+    const g = ctx.createRadialGradient(px - p.r * 0.3, py - p.r * 0.3, 1, px, py, p.r);
+    g.addColorStop(0, p.col); g.addColorStop(1, "rgba(0,0,0,0.3)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill();
+    if (p.ring) { ctx.strokeStyle = "rgba(230,207,154,0.8)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, py, p.r + 7, (p.r + 7) * 0.34, -0.3, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText((lang === "ja" ? p.ja : p.en) + " · " + p.yr, px, py - p.r - 6);
+  });
+  // spacecraft
+  const [cx, cy] = ptOnPath(prog, cw, H);
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(63,232,155,0.7)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = C.good; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText("Voyager 2 · Grand Tour", 14, H - 12);
+}
+
+function drawGalileo(ctx, cw, H, tt) {
+  ctx.clearRect(0, 0, cw, H);
+  // Jupiter fills the frame as a banded backdrop
+  for (let i = 0; i < 16; i++) { ctx.fillStyle = i % 2 ? "#c98a4a" : "#e8cf9a"; ctx.globalAlpha = 0.9; ctx.fillRect(0, (i / 16) * H, cw, H / 16 + 1); ctx.globalAlpha = 1; }
+  ctx.fillStyle = "rgba(200,80,50,0.7)"; ctx.beginPath(); ctx.ellipse(cw * 0.7, H * 0.6, 40, 24, 0, 0, Math.PI * 2); ctx.fill();
+  // probe descending on a parachute
+  const py = 30 + ((tt * 0.6) % (H * 0.55));
+  const px = cw * 0.4 + Math.sin(tt * 0.03) * 10;
+  ctx.strokeStyle = "#eaf3ff"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px - 16, py - 8); ctx.quadraticCurveTo(px, py - 30, px + 16, py - 8); ctx.stroke(); // canopy
+  ctx.fillStyle = "rgba(234,243,255,0.5)"; ctx.beginPath(); ctx.moveTo(px - 16, py - 8); ctx.quadraticCurveTo(px, py - 30, px + 16, py - 8); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(px - 12, py - 8); ctx.lineTo(px, py + 2); ctx.moveTo(px + 12, py - 8); ctx.lineTo(px, py + 2); ctx.stroke(); // shrouds
+  ctx.fillStyle = "#c9c1b0"; ctx.fillRect(px - 4, py + 2, 8, 8); // probe body
+  ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Galileo probe · 7 Dec 1995", cw / 2, H - 12);
+}
+
+function drawCassini(ctx, cw, H, tt) {
+  ctx.clearRect(0, 0, cw, H);
+  // Saturn with prominent rings, upper area
+  const sx = cw * 0.5, sy = H * 0.4, R = Math.min(cw * 0.2, H * 0.34);
+  ctx.strokeStyle = "rgba(230,207,154,0.85)"; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.ellipse(sx, sy, R + 34, (R + 34) * 0.3, -0.28, 0, Math.PI * 2); ctx.stroke();
+  drawBandedGlobe(ctx, sx, sy, R, ["#e8cf9a", "#dcc088", "#e8cf9a", "#d8b878", "#e8cf9a"], false);
+  // ring front half over the globe
+  ctx.strokeStyle = "rgba(230,207,154,0.85)"; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.ellipse(sx, sy, R + 34, (R + 34) * 0.3, -0.28, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+  // pale blue dot (Earth) far below the rings, twinkling
+  const ey = H * 0.82, ex = cw * 0.62;
+  const tw = 0.6 + 0.4 * Math.sin(tt * 0.1);
+  ctx.fillStyle = `rgba(120,180,255,${tw})`; ctx.beginPath(); ctx.arc(ex, ey, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = `rgba(120,180,255,${tw * 0.5})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = "#8fb4ff"; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText("Earth (July 2013)", ex + 12, ey + 3);
+  ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Cassini · the pale blue dot below Saturn's rings", cw / 2, 18);
+}
+
+function drawVanAllen(ctx, cw, H, tt) {
+  ctx.clearRect(0, 0, cw, H);
+  // Earth's limb at the bottom
+  const ecx = cw * 0.5, ecy = H + H * 0.9, eR = H * 1.1;
+  const g = ctx.createRadialGradient(ecx, ecy, eR * 0.6, ecx, ecy, eR);
+  g.addColorStop(0, "#3a5aa8"); g.addColorStop(1, "#1a2a55");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ecx, ecy, eR, 0, Math.PI * 2); ctx.fill();
+  // radiation belts (Van Allen belts) as arcs around Earth
+  ctx.strokeStyle = "rgba(99,211,240,0.4)"; ctx.lineWidth = 2;
+  for (const k of [0.55, 0.72]) { ctx.beginPath(); ctx.ellipse(ecx, ecy, eR * 1.3, eR * k, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+  ctx.fillStyle = "rgba(99,211,240,0.6)"; ctx.font = `10px ${mono}`; ctx.textAlign = "right"; ctx.fillText("radiation belts", cw - 12, 40);
+  // rockoon: balloon lifting a rocket, then the rocket fires upward
+  const phase = (tt * 0.006) % 1;
+  const bx = cw * 0.42;
+  const by = H - 30 - phase * (H * 0.55);
+  // balloon
+  ctx.fillStyle = "rgba(234,243,255,0.85)"; ctx.beginPath(); ctx.ellipse(bx, by - 16, 14, 18, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(234,243,255,0.6)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx - 6, by); ctx.lineTo(bx, by + 8); ctx.moveTo(bx + 6, by); ctx.lineTo(bx, by + 8); ctx.stroke();
+  // rocket
+  ctx.fillStyle = "#c9c1b0"; ctx.beginPath(); ctx.moveTo(bx, by + 6); ctx.lineTo(bx - 4, by + 20); ctx.lineTo(bx + 4, by + 20); ctx.closePath(); ctx.fill();
+  if (phase > 0.55) { ctx.fillStyle = "#ffcf6b"; ctx.beginPath(); ctx.moveTo(bx - 3, by + 20); ctx.lineTo(bx + 3, by + 20); ctx.lineTo(bx, by + 30 + Math.random() * 6); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText("James Van Allen · a 'rockoon' rising", cw / 2, H - 12);
 }
 
 export function GrandTour() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 240;
+  const H = 250;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [sel, setSel] = useState("voyager");
+  const selRef = useRef(sel); selRef.current = sel;
   const progRef = useRef(1);
   const runRef = useRef(false);
 
@@ -102,17 +183,29 @@ export function GrandTour() {
     const c = canRef.current;
     if (!c) return;
     const ctx = setupCanvas(c, cw, H);
-    if (reduceMotion) { draw(ctx, cw, H, 1, lang); return; }
-    let raf;
+    const render = (tt) => {
+      const s = selRef.current;
+      if (s === "voyager") drawVoyager(ctx, cw, H, progRef.current, lang);
+      else if (s === "galileo") drawGalileo(ctx, cw, H, tt);
+      else if (s === "cassini") drawCassini(ctx, cw, H, tt);
+      else drawVanAllen(ctx, cw, H, tt);
+    };
+    if (reduceMotion) { render(0); return; }
+    let raf, tt = 0;
     const loop = () => {
+      tt += 1;
       if (runRef.current) { progRef.current = Math.min(1, progRef.current + 0.004); if (progRef.current >= 1) runRef.current = false; }
-      draw(ctx, cw, H, progRef.current, lang);
+      render(tt);
       raf = requestAnimationFrame(loop);
     };
     loop();
     return () => cancelAnimationFrame(raf);
   }, [cw, lang]);
 
+  const selectMission = (id) => {
+    setSel(id);
+    if (id === "voyager") { progRef.current = 0; runRef.current = true; }
+  };
   const play = () => { progRef.current = 0; runRef.current = true; };
   const m = MISSIONS[sel];
 
@@ -135,17 +228,17 @@ export function GrandTour() {
       <div style={{ flex: "1 1 460px", minWidth: 280 }}>
         <p style={{ ...styles.note, fontStyle: "italic", marginTop: 0, marginBottom: 12 }}>{t.lede}</p>
 
-        <div style={{ marginTop: 4 }}>
-          <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
-        </div>
-        <div style={{ marginTop: 8 }}><button style={styles.iconBtn} onClick={play}>{t.play}</button></div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {ORDER.map((id) => (
-            <button key={id} onClick={() => setSel(id)}
+            <button key={id} onClick={() => selectMission(id)}
               style={{ ...styles.chip, ...(sel === id ? styles.chipOn : {}) }}>{lang === "ja" ? MISSIONS[id].ja : MISSIONS[id].en}</button>
           ))}
         </div>
+
+        <div style={{ marginTop: 12 }}>
+          <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
+        </div>
+        {sel === "voyager" && <div style={{ marginTop: 8 }}><button style={styles.iconBtn} onClick={play}>{t.play}</button></div>}
 
         <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5, marginTop: 8 }}>{lang === "ja" ? m.ja_t : m.en_t}</p>
         <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>
