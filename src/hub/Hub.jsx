@@ -118,6 +118,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch12/index.html",
   },
+  {
+    n: 13,
+    title: { en: "Comets and Asteroids", ja: "彗星と小惑星" },
+    blurb: {
+      en: "Meet the solar system's small bodies — the S, C and M asteroid types, dwarf-planet Ceres and volcanic Vesta, comets with their ion and dust tails, the Kuiper belt and Oort cloud, Tunguska and planetary defense, and the red centaurs and Jupiter's trapped Trojans.",
+      ja: "太陽系の小天体に出会おう——S型・C型・M型の小惑星、準惑星ケレスと火山のベスタ、イオンと塵の尾をもつ彗星、カイパーベルトとオールトの雲、ツングースカと惑星防衛、そして赤いケンタウルス族と木星に捕らわれたトロヤ群。",
+    },
+    href: "chapters/ch13/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
