@@ -109,6 +109,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch11/index.html",
   },
+  {
+    n: 12,
+    title: { en: "Rings, Moons, and Pluto", ja: "環・衛星・冥王星" },
+    blurb: {
+      en: "Explore the icy outer moons and rings — volcanic Io, Europa's hidden ocean, hazy Titan, Saturn's ice rings and Enceladus's geysers, backward Triton, and Pluto's nitrogen heart — worlds that show life's ingredients far from the Sun.",
+      ja: "氷の外側の衛星と環を探ろう——火山のイオ、エウロパの隠れた海、もやのタイタン、土星の氷の環とエンケラドスの間欠泉、逆行するトリトン、そして冥王星の窒素の心臓——太陽から遠く離れて生命の材料を示す世界たち。",
+    },
+    href: "chapters/ch12/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
