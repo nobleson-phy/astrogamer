@@ -41,20 +41,27 @@ const STR = {
 function draw(ctx, cw, H, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  // Jupiter on the left
-  const jx = 4, jy = H / 2, jR = H * 0.42;
+  // Io orbits AROUND Jupiter on an eccentric path — Jupiter sits at one focus.
+  const jR = H * 0.24;
+  const cx = cw * 0.5, cy = H / 2;                     // orbit-ellipse centre
+  const a = Math.min(cw * 0.33, cw / 2 - jR - 34);     // semi-major axis
+  const b = H * 0.34;                                   // semi-minor axis
+  const c = a * 0.36;                                   // focal distance (eccentricity)
+  const jx = cx - c, jy = cy;                           // Jupiter at the left focus
+  // Jupiter (banded), centred at the focus
   ctx.save(); ctx.beginPath(); ctx.arc(jx, jy, jR, 0, Math.PI * 2); ctx.clip();
   for (let i = 0; i < 8; i++) { ctx.fillStyle = i % 2 ? "#c98a4a" : "#e0b878"; ctx.fillRect(jx - jR, jy - jR + (i / 8) * 2 * jR, 2 * jR, 2 * jR / 8 + 1); }
   ctx.restore();
-  // Io on an eccentric orbit: distance varies with the phase
+  ctx.strokeStyle = "rgba(230,200,150,0.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(jx, jy, jR, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Jupiter", jx, jy + jR + 14);
+  // Io on the eccentric orbit
   const ph = tt * 0.02;
-  const orbCx = cw * 0.58, orbRx = cw * 0.3, orbRy = H * 0.32;
-  const ix = orbCx + Math.cos(ph) * orbRx, iy = jy + Math.sin(ph) * orbRy;
-  // orbit path
-  ctx.strokeStyle = "rgba(150,175,230,0.2)"; ctx.beginPath(); ctx.ellipse(orbCx, jy, orbRx, orbRy, 0, 0, Math.PI * 2); ctx.stroke();
-  // distance to Jupiter -> tidal stretch amount and heat
+  const ix = cx + Math.cos(ph) * a, iy = cy + Math.sin(ph) * b;
+  // orbit path (ellipse centred at cx,cy)
+  ctx.strokeStyle = "rgba(150,175,230,0.2)"; ctx.beginPath(); ctx.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2); ctx.stroke();
+  // distance to Jupiter -> tidal stretch amount and heat (perijove = a-c closest, apojove = a+c)
   const dist = Math.hypot(ix - jx, iy - jy);
-  const near = clamp(1 - (dist - (orbCx - orbRx - jx)) / (2 * orbRx), 0, 1); // 1 when closest
+  const near = clamp((a + c - dist) / (2 * c), 0, 1); // 1 at perijove (closest)
   const stretch = 1 + near * 0.28; // tidal elongation toward Jupiter
   const heat = 0.3 + near * 0.7;
   // Io body, elongated toward Jupiter

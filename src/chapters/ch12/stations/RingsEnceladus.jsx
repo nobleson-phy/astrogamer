@@ -26,7 +26,8 @@ const STR = {
     tab1: "Enceladus → E ring", tab2: "Uranus / Neptune rings",
     geyser: "geysers of water ice", ering: "faint, broad E ring",
     narrow: "narrow, dark carbon rings", shep: "shepherd moon", shep2: "shepherd moon",
-    note: "Enceladus's south-polar geysers spray ice that becomes Saturn's faint E ring. Uranus and Neptune instead have narrow, dark, carbon-rich rings, penned in by tiny shepherd moons.",
+    noteEnc: "Enceladus's south-polar geysers spray water ice into orbit, and that spray continuously resupplies Saturn's broad, faint E ring — a ring being built by its own moon right now.",
+    noteGiant: "Uranus and Neptune have narrow, very dark rings of carbon-rich (not icy) particles. Small 'shepherd' moons on either side confine each ring with their gravity, keeping it from spreading out.",
   },
   ja: {
     title: "環はどこから来るのか",
@@ -39,7 +40,8 @@ const STR = {
     tab1: "エンケラドス → E環", tab2: "天王星・海王星の環",
     geyser: "水の氷の間欠泉", ering: "かすかで広いE環",
     narrow: "細く暗い炭素の環", shep: "羊飼い衛星", shep2: "羊飼い衛星",
-    note: "エンケラドスの南極の間欠泉が噴く氷が、土星のかすかなE環になります。天王星と海王星は代わりに、細く暗い炭素に富む環をもち、小さな羊飼い衛星に囲い込まれています。",
+    noteEnc: "エンケラドスの南極の間欠泉が水の氷を軌道へ噴き上げ、その飛沫が土星の広くかすかなE環を絶えず補給します——衛星自身が今まさに作りつづけている環です。",
+    noteGiant: "天王星と海王星は、炭素に富む（氷ではない）粒子でできた、細くとても暗い環をもちます。両側の小さな「羊飼い衛星」が重力で各環を囲い込み、広がらないように保っています。",
   },
 };
 
@@ -151,7 +153,7 @@ export function RingsEnceladus() {
           <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
         </div>
 
-        <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>
+        <p style={{ ...styles.note, maxWidth: "none" }}>{mode === "enceladus" ? t.noteEnc : t.noteGiant}</p>
       </div>
     </div>
   );
