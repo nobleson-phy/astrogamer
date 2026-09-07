@@ -45,39 +45,65 @@ const STR = {
   },
 };
 
+// deterministic PRNG so the surface is fixed (no per-frame flicker)
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function drawPluto(ctx, cx, cy, pR) {
+  // base globe: pale tan, shaded to a limb
+  const g = ctx.createRadialGradient(cx - pR * 0.35, cy - pR * 0.35, pR * 0.15, cx, cy, pR);
+  g.addColorStop(0, "#e6d4b4"); g.addColorStop(0.7, "#c9ad84"); g.addColorStop(1, "#8f7454");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.clip();
+  const rnd = mulberry32(20150714); // New Horizons flyby date as a fixed seed
+  // dark reddish equatorial band along the bottom-left (the "Cthulhu"-like macula)
+  ctx.fillStyle = "rgba(74,50,38,0.55)";
+  ctx.beginPath();
+  ctx.ellipse(cx - pR * 0.4, cy + pR * 0.42, pR * 0.78, pR * 0.34, -0.25, 0, Math.PI * 2);
+  ctx.fill();
+  // scattered fixed mottling / craters (deterministic)
+  for (let i = 0; i < 46; i++) {
+    const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * pR;
+    const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr;
+    ctx.fillStyle = `rgba(90,66,48,${0.08 + rnd() * 0.16})`;
+    ctx.beginPath(); ctx.arc(px, py, 2 + rnd() * 7, 0, Math.PI * 2); ctx.fill();
+  }
+  // heart-shaped Sputnik Planitia (bright, smooth nitrogen ice), lower-centre-right
+  const hx = cx + pR * 0.26, hy = cy + pR * 0.14, hs = pR * 0.52;
+  const hg = ctx.createRadialGradient(hx, hy - hs * 0.1, hs * 0.1, hx, hy, hs);
+  hg.addColorStop(0, "#faf5e6"); hg.addColorStop(1, "#eadfc6");
+  ctx.fillStyle = hg;
+  ctx.beginPath();
+  ctx.moveTo(hx, hy + hs * 0.8);
+  ctx.bezierCurveTo(hx - hs * 1.05, hy - hs * 0.08, hx - hs * 0.52, hy - hs * 0.72, hx, hy - hs * 0.26);
+  ctx.bezierCurveTo(hx + hs * 0.52, hy - hs * 0.72, hx + hs * 1.05, hy - hs * 0.08, hx, hy + hs * 0.8);
+  ctx.closePath(); ctx.fill();
+  // faint static convection-cell polygons inside the glacier
+  ctx.strokeStyle = "rgba(150,145,128,0.35)"; ctx.lineWidth = 0.7;
+  for (let i = 0; i < 6; i++) {
+    const px = hx - hs * 0.45 + (i % 3) * hs * 0.42, py = hy - hs * 0.12 + Math.floor(i / 3) * hs * 0.34;
+    ctx.beginPath(); ctx.arc(px, py, hs * 0.17, 0, Math.PI * 2); ctx.stroke();
+  }
+  // soft limb shading for roundness
+  const lg = ctx.createRadialGradient(cx, cy, pR * 0.6, cx, cy, pR);
+  lg.addColorStop(0, "rgba(0,0,0,0)"); lg.addColorStop(1, "rgba(0,0,0,0.35)");
+  ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function draw(ctx, cw, H, mode, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
   const cx = cw / 2, cy = H / 2;
   if (mode === "sputnik") {
     const pR = Math.min(cw * 0.26, H * 0.42);
-    // Pluto body, tan with darker mottling
-    const g = ctx.createRadialGradient(cx - pR * 0.3, cy - pR * 0.3, pR * 0.2, cx, cy, pR);
-    g.addColorStop(0, "#d9c3a0"); g.addColorStop(1, "#9a7f5e");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.clip();
-    // dark mottled regions (cratered old terrain)
-    for (let i = 0; i < 40; i++) {
-      ctx.fillStyle = `rgba(90,70,55,${0.15 + Math.random() * 0.2})`;
-      const rx = cx - pR + Math.random() * 2 * pR, ry = cy - pR + Math.random() * 2 * pR;
-      ctx.beginPath(); ctx.arc(rx, ry, 3 + Math.random() * 8, 0, Math.PI * 2); ctx.fill();
-    }
-    // heart-shaped Sputnik Planitia (bright smooth nitrogen ice) lower-right
-    const hx = cx + pR * 0.28, hy = cy + pR * 0.12, hs = pR * 0.5;
-    ctx.fillStyle = "#f2ecd9";
-    ctx.beginPath();
-    ctx.moveTo(hx, hy + hs * 0.75);
-    ctx.bezierCurveTo(hx - hs, hy - hs * 0.1, hx - hs * 0.5, hy - hs * 0.7, hx, hy - hs * 0.25);
-    ctx.bezierCurveTo(hx + hs * 0.5, hy - hs * 0.7, hx + hs, hy - hs * 0.1, hx, hy + hs * 0.75);
-    ctx.closePath(); ctx.fill();
-    // slow convection cells (polygons) inside the glacier
-    ctx.strokeStyle = "rgba(150,150,140,0.5)"; ctx.lineWidth = 0.8;
-    for (let i = 0; i < 5; i++) {
-      const px = hx - hs * 0.4 + (i % 3) * hs * 0.35, py = hy - hs * 0.1 + Math.floor(i / 3) * hs * 0.3;
-      const wob = Math.sin(tt * 0.02 + i) * 1.5;
-      ctx.beginPath(); ctx.arc(px + wob, py, hs * 0.16, 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.restore();
+    drawPluto(ctx, cx, cy, pR);
     ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "center";
     ctx.fillText(t.sputnik, cx, cy + pR + 20);
     ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`;

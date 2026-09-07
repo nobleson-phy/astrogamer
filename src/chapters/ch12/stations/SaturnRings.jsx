@@ -18,7 +18,8 @@ const STR = {
   en: {
     title: "Saturn's rings",
     kind: "A billion tiny ice moons",
-    lede: "The rings look solid, but they are not. Speed up time and watch: the inner ring races around while the outer ring dawdles — the signature of separate orbiting particles.",
+    lede: "The rings look solid, but they are not. Drag the speed slider and watch the marker particles: the inner ones race around while the outer ones dawdle — the signature of separate orbiting bodies.",
+    speed: "Time speed",
     thread: "THE STORY CONTINUES",
     threadText: "No sight in the solar system rivals Saturn's rings. But they are not a solid disc — they are a swarm of countless chunks of ice, each obeying Kepler's laws, each a moon in miniature.",
     key: "ICE PARTICLES, INNER ONES ORBIT FASTER",
@@ -29,7 +30,8 @@ const STR = {
   ja: {
     title: "土星の環",
     kind: "10億の小さな氷の衛星",
-    lede: "環は固く見えますが、そうではありません。時間を速めて見よう：内側の環は駆けめぐり、外側の環はのんびり——別々に公転する粒子の証です。",
+    lede: "環は固く見えますが、そうではありません。速度スライダーを動かして目印の粒子を見よう：内側は駆けめぐり、外側はのんびり——別々に公転する天体の証です。",
+    speed: "時間の速さ",
     thread: "物語はつづく",
     threadText: "太陽系で土星の環に並ぶ眺めはありません。しかしそれは固い円盤ではなく——無数の氷のかけらの群れで、それぞれがケプラーの法則に従う、ミニチュアの衛星です。",
     key: "氷の粒子、内側ほど速く回る",
@@ -39,59 +41,81 @@ const STR = {
   },
 };
 
-function draw(ctx, cw, H, tt, lang) {
+function draw(ctx, cw, H, phase, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
   const cx = cw / 2, cy = H / 2;
-  const sR = H * 0.16; // Saturn radius
-  // rings as concentric bands of particles, drawn in perspective (flattened y)
-  const yScale = 0.32;
+  const sR = H * 0.17;            // Saturn radius
+  const yScale = 0.34;           // ring tilt (foreshortening)
   const rings = [
-    { r0: sR * 1.25, r1: sR * 1.9, col: "rgba(200,190,170,0.5)" },   // C/B
-    { r0: sR * 1.9, r1: sR * 2.05, col: "rgba(10,12,20,0.9)" },       // Cassini Division
-    { r0: sR * 2.05, r1: sR * 2.55, col: "rgba(220,210,190,0.65)" },  // A ring
+    { r0: sR * 1.22, r1: sR * 1.9, col: "rgba(206,192,166,0.85)" },   // C + B rings
+    { r0: sR * 1.9, r1: sR * 2.02, col: "rgba(8,10,18,0)" },          // Cassini Division (gap)
+    { r0: sR * 2.02, r1: sR * 2.55, col: "rgba(224,212,188,0.9)" },   // A ring
   ];
-  // draw back halves of rings first
-  function ringArc(r0, r1, col, back) {
-    const steps = 90;
-    ctx.fillStyle = col;
-    for (let i = 0; i < steps; i++) {
-      const a = (i / steps) * Math.PI * 2;
-      if (back ? (Math.sin(a) > 0) : (Math.sin(a) <= 0)) continue;
-      const rm = (r0 + r1) / 2;
-      const x = cx + Math.cos(a) * rm, y = cy + Math.sin(a) * rm * yScale;
-      ctx.fillRect(x - 1, y - (r1 - r0) / 2 * 0.5, 2, (r1 - r0) * 0.5);
+  // smooth elliptical annulus band, optionally clipped to front/back half
+  function band(r0, r1, col, half) {
+    if (!col || col.endsWith(",0)")) return;
+    ctx.save();
+    if (half) {
+      ctx.beginPath();
+      if (half === "front") ctx.rect(0, cy, cw, H - cy);
+      else ctx.rect(0, 0, cw, cy);
+      ctx.clip();
     }
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r1, r1 * yScale, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, r0, r0 * yScale, 0, 0, Math.PI * 2);
+    ctx.fillStyle = col; ctx.fill("evenodd");
+    ctx.restore();
   }
-  // orbiting particles to show differential rotation
-  function particles(r0, r1, back) {
-    for (let k = 0; k < 60; k++) {
-      const rr = r0 + ((k * 37) % 100) / 100 * (r1 - r0);
-      const speed = 1 / Math.pow(rr, 1.5) * 900; // Kepler: inner faster
-      const a = (k * 0.63 + tt * 0.01 * speed) % (Math.PI * 2);
-      if (back ? (Math.sin(a) > 0) : (Math.sin(a) <= 0)) continue;
-      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * yScale;
-      ctx.fillStyle = "rgba(240,235,220,0.8)";
-      ctx.fillRect(x, y, 1.6, 1.6);
+  // subtle concentric shading lines so the band reads as many ringlets
+  function ringlets(r0, r1, half) {
+    ctx.save();
+    ctx.beginPath();
+    if (half === "front") ctx.rect(0, cy, cw, H - cy); else ctx.rect(0, 0, cw, cy);
+    ctx.clip();
+    ctx.strokeStyle = "rgba(120,100,70,0.18)"; ctx.lineWidth = 1;
+    for (let rr = r0; rr <= r1; rr += (r1 - r0) / 10) {
+      ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * yScale, 0, 0, Math.PI * 2); ctx.stroke();
     }
+    ctx.restore();
   }
-  // BACK
-  rings.forEach(r => ringArc(r.r0, r.r1, r.col, true));
-  particles(sR * 1.25, sR * 1.9, true);
-  particles(sR * 2.05, sR * 2.55, true);
+  // a few bright marker particles that reveal differential (Keplerian) rotation
+  const markers = [
+    { r: sR * 1.45, col: "#fff2c8" }, { r: sR * 1.7, col: "#ffd98a" },
+    { r: sR * 2.2, col: "#bfe0ff" }, { r: sR * 2.45, col: "#9fc4ff" },
+  ];
+  function drawMarkers(half) {
+    markers.forEach((m, i) => {
+      const speed = Math.pow(sR * 1.45 / m.r, 1.5);   // Kepler: inner faster
+      const a = (phase * speed + i * 1.7) % (Math.PI * 2);
+      const front = Math.sin(a) > 0;
+      if ((half === "front") !== front) return;
+      const x = cx + Math.cos(a) * m.r, y = cy + Math.sin(a) * m.r * yScale;
+      ctx.fillStyle = m.col; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 1; ctx.stroke();
+    });
+  }
+  // BACK half of rings
+  rings.forEach(r => band(r.r0, r.r1, r.col, "back"));
+  ringlets(sR * 1.22, sR * 1.9, "back"); ringlets(sR * 2.02, sR * 2.55, "back");
+  drawMarkers("back");
   // Saturn body
   const g = ctx.createRadialGradient(cx - sR * 0.3, cy - sR * 0.3, sR * 0.2, cx, cy, sR);
   g.addColorStop(0, "#e8d5a8"); g.addColorStop(1, "#b89a5e");
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, sR, 0, Math.PI * 2); ctx.fill();
-  // FRONT
-  rings.forEach(r => ringArc(r.r0, r.r1, r.col, false));
-  particles(sR * 1.25, sR * 1.9, false);
-  particles(sR * 2.05, sR * 2.55, false);
+  // ring shadow line across the planet
+  ctx.strokeStyle = "rgba(60,45,25,0.35)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(cx, cy, sR * 0.96, sR * 0.96 * yScale, 0, 0.15, Math.PI - 0.15); ctx.stroke();
+  // FRONT half of rings
+  rings.forEach(r => band(r.r0, r.r1, r.col, "front"));
+  ringlets(sR * 1.22, sR * 1.9, "front"); ringlets(sR * 2.02, sR * 2.55, "front");
+  drawMarkers("front");
   // labels
   ctx.fillStyle = C.cool; ctx.font = `10px ${mono}`; ctx.textAlign = "center";
-  ctx.fillText(t.fast, cx - sR * 1.55, cy + sR * 0.55 * yScale + 22);
-  ctx.fillText(t.slow, cx + sR * 2.3, cy + sR * 2.3 * yScale + 14);
-  ctx.fillStyle = C.sun; ctx.fillText(t.cassini, cx, cy - sR * 2.05 * yScale - 8);
+  ctx.fillText(t.fast, cx, cy + sR * 1.45 * yScale + 18);
+  ctx.fillText(t.slow, cx, cy + sR * 2.5 * yScale + 16);
+  ctx.fillStyle = C.sun; ctx.fillText(t.cassini, cx, cy - sR * 2.02 * yScale - 8);
 }
 
 export function SaturnRings() {
@@ -101,14 +125,17 @@ export function SaturnRings() {
   const H = 250;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
+  const [speed, setSpeed] = useState(1);
+  const speedRef = useRef(1);
+  speedRef.current = speed;
 
   useEffect(() => {
     const c = canRef.current;
     if (!c) return;
     const ctx = setupCanvas(c, cw, H);
-    if (reduceMotion) { draw(ctx, cw, H, 40, lang); return; }
-    let raf, tt = 0;
-    const loop = () => { tt += 1; draw(ctx, cw, H, tt, lang); raf = requestAnimationFrame(loop); };
+    if (reduceMotion) { draw(ctx, cw, H, 1.2, lang); return; }
+    let raf, phase = 0;
+    const loop = () => { phase += 0.012 * speedRef.current; draw(ctx, cw, H, phase, lang); raf = requestAnimationFrame(loop); };
     loop();
     return () => cancelAnimationFrame(raf);
   }, [cw, lang]);
@@ -131,6 +158,14 @@ export function SaturnRings() {
 
       <div style={{ flex: "1 1 460px", minWidth: 280 }}>
         <p style={{ ...styles.note, fontStyle: "italic", marginTop: 0, marginBottom: 12 }}>{t.lede}</p>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <span style={{ fontFamily: mono, fontSize: 12, color: C.cool, whiteSpace: "nowrap" }}>{t.speed}</span>
+          <input type="range" min="0" max="3" step="0.05" value={speed}
+            onChange={(e) => setSpeed(parseFloat(e.target.value))}
+            style={{ flex: 1, accentColor: C.sun }} />
+          <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, width: 42, textAlign: "right" }}>{speed.toFixed(1)}×</span>
+        </div>
 
         <div style={{ marginTop: 4 }}>
           <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
