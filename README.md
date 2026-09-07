@@ -25,6 +25,7 @@ The landing page lists the course chapters. Available now:
 9. **Cratered Worlds** — the Moon and Mercury: the lunar highlands and maria, the physics of impact cratering, dating by craters, regolith and polar ice, the Giant Impact, and Mercury's giant iron core, 3:2 spin–orbit day, and shrinking crust.
 10. **Earthlike Planets: Venus and Mars** — Venus's phases, crushing CO₂ air, runaway greenhouse and naked resurfaced crust; Mars's rust, giant volcanoes and canyons, water past and present; and the divergent fates of three sister worlds.
 11. **The Giant Planets** — the Grand Tour and its probes, the gas/ice/rock vocabulary, Jupiter's metallic-hydrogen interior, ammonia clouds and photochemistry, centuries-long storms and 1800 km/h winds, the tilted blue ice giants, faint distant sunlight, and why infrared detectors run cold.
+12. **Rings, Moons, and Pluto** — the Galilean moons, tidal-heated volcanic Io and Europa's hidden ocean, hazy nitrogen-clad Titan and the Huygens landing, Saturn's ice rings and the Cassini Division, Enceladus's geysers and the dark narrow rings of the ice giants, backward-orbiting captured Triton, and dwarf planet Pluto with its young, convecting Sputnik Planitia and tidally locked Charon.
 
 ### Eight interactive "stations" per chapter
 Each chapter is a set of bespoke, animated canvas/SVG stations (an orrery, a light-pulse
