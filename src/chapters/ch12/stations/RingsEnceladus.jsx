@@ -76,30 +76,41 @@ function draw(ctx, cw, H, mode, tt, lang) {
     ctx.fillText(t.geyser, ex, ey + 46);
     ctx.fillStyle = "rgba(160,210,255,0.9)"; ctx.fillText(t.ering, sx + sR * 3.2, sy - sR * 3 * yS - 6);
   } else {
-    // ice giant with a narrow dark ring flanked by two shepherd moons
-    const pR = H * 0.2;
+    // ice giant with a narrow dark ring that clearly encircles the planet.
+    // Steeper tilt so the ring's top/bottom arcs extend beyond the disk, and
+    // draw it as back-half → planet → front-half so it wraps around.
+    const pR = H * 0.17;
+    const yS = 0.5, rr = pR * 2.2;      // vertical half-extent rr*yS ≈ 1.1·pR (pokes out top & bottom)
+    // particle helper (split front/back by sin sign; canvas y-down → sin>0 is front)
+    const particle = (front) => {
+      for (let k = 0; k < 160; k++) {
+        const a = (k * 0.41 + tt * 0.006) % (Math.PI * 2);
+        if ((Math.sin(a) > 0) !== front) continue;
+        const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * yS;
+        ctx.fillStyle = "rgba(70,66,74,0.9)"; ctx.fillRect(x, y, 1.6, 1.6);
+      }
+    };
+    // BACK half of the ring (far side, behind the planet)
+    ctx.strokeStyle = "rgba(40,38,44,0.95)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * yS, 0, Math.PI, Math.PI * 2); ctx.stroke();
+    particle(false);
+    // planet body
     const pg = ctx.createRadialGradient(cx - pR * 0.3, cy - pR * 0.3, pR * 0.2, cx, cy, pR);
     pg.addColorStop(0, "#7fc7d8"); pg.addColorStop(1, "#3a7f96");
     ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy, pR, 0, Math.PI * 2); ctx.fill();
-    const yS = 0.3, rr = pR * 1.9;
-    // narrow dark ring
+    // FRONT half of the ring (near side, in front of the planet)
     ctx.strokeStyle = "rgba(40,38,44,0.95)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * yS, 0, 0, Math.PI * 2); ctx.stroke();
-    // dark particles
-    for (let k = 0; k < 120; k++) {
-      const a = (k * 0.52 + tt * 0.006) % (Math.PI * 2);
-      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * yS;
-      ctx.fillStyle = "rgba(70,66,74,0.9)"; ctx.fillRect(x, y, 1.6, 1.6);
-    }
-    // two shepherd moons just inside and outside
-    [[rr * 0.9, tt * 0.012], [rr * 1.12, tt * 0.009 + 1]].forEach(([sr, sa]) => {
+    ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * yS, 0, 0, Math.PI); ctx.stroke();
+    particle(true);
+    // two shepherd moons just inside and outside the ring
+    [[rr * 0.88, tt * 0.012], [rr * 1.14, tt * 0.009 + 1]].forEach(([sr, sa]) => {
       const x = cx + Math.cos(sa) * sr, y = cy + Math.sin(sa) * sr * yS;
       ctx.fillStyle = "#c9c2b4"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = "rgba(255,207,107,0.6)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke();
     });
     ctx.fillStyle = C.text; ctx.font = `10px ${mono}`; ctx.textAlign = "center";
-    ctx.fillText(t.narrow, cx, cy + rr * yS + 24);
-    ctx.fillStyle = C.sun; ctx.fillText(t.shep, cx - rr, cy - 10);
+    ctx.fillText(t.narrow, cx, cy + rr * yS + 22);
+    ctx.fillStyle = C.sun; ctx.fillText(t.shep, cx - rr - 4, cy - 6);
   }
 }
 
