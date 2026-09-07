@@ -111,26 +111,34 @@ function draw(ctx, cw, H, mode, tt, lang) {
     ctx.restore();
     ctx.fillStyle = C.text; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.earthL, eX, cy + r + 20);
   } else {
-    // SL9: Jupiter at right, string of fragments approaching and impacting
-    const jx = cw * 0.7, jR = H * 0.34;
+    // SL9: a string of fragments drifts in from the left and strikes Jupiter's
+    // limb one by one — a scar appears ONLY after its fragment has arrived.
+    const jx = cw * 0.68, jR = H * 0.34;
+    const N = 7, spacing = 20;
+    const impactX = jx - jR * 0.9;          // left limb, at the impact latitude
+    const impactY = cy + jR * 0.32;
+    // travel of the lead fragment across the cycle
+    const Lc = 440, p = (tt % Lc) / Lc;
+    const leadStart = cw * 0.03, leadEnd = impactX + N * spacing;
+    const leadX = leadStart + p * (leadEnd - leadStart);
+    // Jupiter body + accumulated scars (clipped to disk)
     ctx.save(); ctx.beginPath(); ctx.arc(jx, cy, jR, 0, Math.PI * 2); ctx.clip();
     for (let i = 0; i < 9; i++) { ctx.fillStyle = i % 2 ? "#c98a4a" : "#e0b878"; ctx.fillRect(jx - jR, cy - jR + (i / 9) * 2 * jR, 2 * jR, 2 * jR / 9 + 1); }
-    // impact scars accumulate along lower-left limb
-    const scars = Math.min(6, Math.floor((tt % 300) / 40));
-    for (let i = 0; i < scars; i++) {
-      const a = Math.PI * (0.75 + i * 0.06);
-      ctx.fillStyle = "rgba(40,25,15,0.75)"; ctx.beginPath();
-      ctx.arc(jx + Math.cos(a) * jR * 0.92, cy + Math.sin(a) * jR * 0.92, 6, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < N; i++) {
+      const fx = leadX - i * spacing;
+      if (fx >= impactX) {                    // this fragment has already hit
+        const sx = impactX + 6 + i * 6, sy = impactY - i * 4;   // short slanted row of scars
+        ctx.fillStyle = "rgba(40,24,14,0.8)"; ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, Math.PI * 2); ctx.fill();
+      }
     }
     ctx.restore();
     ctx.strokeStyle = "rgba(230,200,150,0.3)"; ctx.beginPath(); ctx.arc(jx, cy, jR, 0, Math.PI * 2); ctx.stroke();
-    // string-of-pearls fragments incoming from left
-    const prog = (tt % 300) / 300;
-    for (let i = 0; i < 7; i++) {
-      const fx = cw * 0.08 + i * 22 + prog * (jx - jR - cw * 0.08);
-      if (fx > jx - jR) continue;
-      ctx.fillStyle = "#dfe8ee"; ctx.beginPath(); ctx.arc(fx, cy + jR * 0.4, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "rgba(200,225,255,0.3)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(fx - 8, cy + jR * 0.4); ctx.lineTo(fx, cy + jR * 0.4); ctx.stroke();
+    // fragments still in flight (before reaching the limb)
+    for (let i = 0; i < N; i++) {
+      const fx = leadX - i * spacing;
+      if (fx >= impactX || fx < 0) continue;
+      ctx.fillStyle = "#dfe8ee"; ctx.beginPath(); ctx.arc(fx, impactY, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(200,225,255,0.3)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(fx - 8, impactY); ctx.lineTo(fx, impactY); ctx.stroke();
     }
     ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.sl9, cw * 0.5, H - 8);
   }
