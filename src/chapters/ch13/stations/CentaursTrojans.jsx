@@ -27,7 +27,8 @@ const STR = {
     trojansText: "The Trojan asteroids are trapped at Jupiter's L4 and L5 Lagrange points — gravitationally stable spots 60° ahead of and 60° behind the planet along its orbit. Because they are held apart from the main belt and may have formed separately, they are considered a distinct and potentially more primitive population.",
     centaurs: "Centaurs", trojans: "Trojans",
     chiron: "Chiron", pholus: "Pholus (reddest in the solar system)",
-    jup: "Jupiter", l4: "L4 · 60° ahead", l5: "L5 · 60° behind", belt: "main belt",
+    jup: "Jupiter", nep: "Neptune", zone: "centaur zone — between the giant planets",
+    l4: "L4 · 60° ahead", l5: "L5 · 60° behind", belt: "main belt",
     noteC: "Centaurs like Chiron and Pholus orbit among the giant planets, part comet and part asteroid; Pholus is the reddest body known in the solar system.",
     noteT: "Trojans sit at Jupiter's L4 and L5 points, 60° ahead of and behind it — a separately trapped, possibly more primitive population than the main belt.",
   },
@@ -43,7 +44,8 @@ const STR = {
     trojansText: "トロヤ群小惑星は、木星のL4とL5のラグランジュ点——軌道に沿って惑星の60°前と60°後ろにある、重力的に安定した場所——に捕らわれています。メインベルトから離れて保たれ、別に形成された可能性があるため、独特で、より始原的かもしれない集団と考えられています。",
     centaurs: "ケンタウルス族", trojans: "トロヤ群",
     chiron: "キロン", pholus: "フォルス（太陽系で最も赤い）",
-    jup: "木星", l4: "L4 · 60°前", l5: "L5 · 60°後", belt: "メインベルト",
+    jup: "木星", nep: "海王星", zone: "ケンタウルスの領域——巨大惑星の間",
+    l4: "L4 · 60°前", l5: "L5 · 60°後", belt: "メインベルト",
     noteC: "キロンやフォルスなどのケンタウルス族は巨大惑星の間を公転し、半分彗星・半分小惑星です。フォルスは太陽系で知られる最も赤い天体です。",
     noteT: "トロヤ群は木星のL4とL5点、その60°前後にあります——メインベルトとは別に捕らわれた、より始原的かもしれない集団です。",
   },
@@ -57,28 +59,44 @@ function draw(ctx, cw, H, mode, tt, lang) {
   ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill();
   const yS = 0.5;
   if (mode === "centaurs") {
-    // Jupiter and Neptune orbits; centaurs roam between
-    const jR = Math.min(cw * 0.16, H * 0.3), nR = Math.min(cw * 0.42, H * 0.46);
-    ctx.strokeStyle = "rgba(150,175,230,0.2)"; ctx.lineWidth = 1;
+    // Clean view: Jupiter & Neptune orbits, a shaded "centaur zone" between them,
+    // and just two labelled centaurs (grey Chiron, red Pholus) on clear orbits.
+    const jR = Math.min(cw * 0.17, H * 0.3), nR = Math.min(cw * 0.44, H * 0.46);
+    // shaded zone between the two giant-planet orbits
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, nR, nR * yS, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, jR, jR * yS, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(150,120,120,0.10)"; ctx.fill("evenodd");
+    // planet orbits + planets
+    ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.ellipse(cx, cy, jR, jR * yS, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(cx, cy, nR, nR * yS, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = "#c98a4a"; ctx.beginPath(); ctx.arc(cx + jR, cy, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#5b8fd8"; ctx.beginPath(); ctx.arc(cx - nR, cy, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#e0b878"; ctx.beginPath(); ctx.arc(cx + jR, cy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#5b8fd8"; ctx.beginPath(); ctx.arc(cx - nR, cy, 5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
-    ctx.fillText(t.jup, cx + jR, cy - jR * yS - 6); ctx.fillText("Neptune", cx - nR, cy - nR * yS - 6);
-    // scattered faint centaur orbits (eccentric, tilted)
-    ctx.strokeStyle = "rgba(180,160,150,0.15)";
-    for (let i = 0; i < 5; i++) { const rr = jR + (i + 1) / 6 * (nR - jR); ctx.beginPath(); ctx.ellipse(cx + (i - 2) * 8, cy, rr, rr * yS * 0.8, 0.2, 0, Math.PI * 2); ctx.stroke(); }
-    // Chiron (grey) and Pholus (very red)
-    const midR = (jR + nR) / 2;
+    ctx.fillText(t.jup, cx + jR, cy - jR * yS - 6);
+    ctx.fillText(t.nep, cx - nR, cy - nR * yS - 6);
+    // two centaur orbits inside the zone
+    const rC = jR + 0.4 * (nR - jR), rP = jR + 0.72 * (nR - jR);
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = "rgba(185,180,172,0.3)"; ctx.beginPath(); ctx.ellipse(cx, cy, rC, rC * yS, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = "rgba(200,90,60,0.35)"; ctx.beginPath(); ctx.ellipse(cx, cy, rP, rP * yS, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
     const chA = tt * 0.01, phA = tt * 0.008 + 2.2;
-    const chx = cx + Math.cos(chA) * midR, chy = cy + Math.sin(chA) * midR * yS;
-    const phx = cx + Math.cos(phA) * (midR * 1.15), phy = cy + Math.sin(phA) * (midR * 1.15) * yS;
+    const chx = cx + Math.cos(chA) * rC, chy = cy + Math.sin(chA) * rC * yS;
+    const phx = cx + Math.cos(phA) * rP, phy = cy + Math.sin(phA) * rP * yS;
     ctx.fillStyle = "#9a9188"; ctx.beginPath(); ctx.arc(chx, chy, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#b33a24"; ctx.beginPath(); ctx.arc(phx, phy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#c0311c"; ctx.beginPath(); ctx.arc(phx, phy, 5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = "rgba(220,90,60,0.5)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(phx, phy, 8, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = "#c9c2b4"; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.chiron, chx, chy - 10);
-    ctx.fillStyle = "#e0774f"; ctx.fillText(t.pholus, phx, phy + 18);
+    // fixed legend so labels don't chase the moving dots
+    const lx = 10, ly = 15; ctx.textAlign = "left";
+    ctx.fillStyle = "#9a9188"; ctx.beginPath(); ctx.arc(lx + 4, ly - 3, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.text; ctx.font = `10px ${mono}`; ctx.fillText(t.chiron, lx + 14, ly);
+    ctx.fillStyle = "#c0311c"; ctx.beginPath(); ctx.arc(lx + 4, ly + 13, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#e0774f"; ctx.fillText(t.pholus, lx + 14, ly + 16);
+    // zone label along the bottom
+    ctx.fillStyle = "rgba(205,175,165,0.75)"; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
+    ctx.fillText(t.zone, cx, H - 6);
   } else {
     // Trojans at Jupiter's L4/L5
     const jR = Math.min(cw * 0.34, H * 0.42);
