@@ -127,6 +127,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch13/index.html",
   },
+  {
+    n: 14,
+    title: { en: "Cosmic Samples and the Origin of the Solar System", ja: "宇宙のサンプルと太陽系の起源" },
+    blurb: {
+      en: "Read the debris that rains down on Earth — meteor showers and their radiants, meteor storms, the plunge from meteor to meteorite, the Antarctic meteorite harvest, stones, irons and stony-irons, amino acids in carbonaceous meteorites, the condensation sequence that built the planets, and the exoplanets that rewrote planet formation.",
+      ja: "地球に降り注ぐ破片を読み解こう——流星群と放射点、流星嵐、流星から隕石への落下、南極の隕石採集、石質・鉄質・石鉄隕石、炭素質隕石のアミノ酸、惑星を作った凝縮系列、そして惑星形成を書き換えた系外惑星。",
+    },
+    href: "chapters/ch14/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
