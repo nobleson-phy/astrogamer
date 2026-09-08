@@ -71,7 +71,7 @@ function draw(ctx, cw, H, mode, tt, lang) {
     ctx.fillStyle = "#ffe6a0"; ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
     // protoplanets sitting in the gaps
     const maxR = Math.min(cw * 0.46, H * 1.05);
-    [[maxR * 0.5, tt * 0.01], [maxR * 0.78, -tt * 0.007 + 1]].forEach(([r, a]) => {
+    [[maxR * 0.5, tt * 0.01], [maxR * 0.78, tt * 0.007 + 1]].forEach(([r, a]) => {
       const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * yS;
       ctx.fillStyle = "#c9b89a"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = "rgba(255,207,107,0.4)"; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.stroke();
