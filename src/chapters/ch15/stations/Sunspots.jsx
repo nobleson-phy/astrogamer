@@ -65,10 +65,15 @@ function draw(ctx, cw, H, tt, lang) {
     ctx.quadraticCurveTo(sx + i * R * 0.6, sy - R * 1.6, sx + i * R * 1.1, sy - R * 0.2);
     ctx.stroke();
   }
-  // labels
-  ctx.font = `10px ${mono}`; ctx.textAlign = "center";
-  ctx.fillStyle = "#2a1c0e"; ctx.fillStyle = C.text; ctx.fillText(t.cool, sx, sy + R + 16);
-  ctx.fillStyle = "#ffdf9a"; ctx.fillText(t.hot, cw * 0.8, 20);
+  // labels with dark backing pills so they read against the bright surface
+  const chip = (text, x, y, col) => {
+    ctx.font = `10px ${mono}`; ctx.textAlign = "center";
+    const wd = ctx.measureText(text).width + 14;
+    ctx.fillStyle = "rgba(8,10,16,0.8)"; ctx.fillRect(x - wd / 2, y - 11, wd, 16);
+    ctx.fillStyle = col; ctx.fillText(text, x, y);
+  };
+  chip(t.cool, sx, Math.min(sy + R + 18, H - 6), "#ffcf9a");
+  chip(t.hot, cw * 0.8, 18, "#ffdf9a");
   // Zeeman inset: a spectral line splitting into three, right side
   const zx = cw * 0.72, zy = H * 0.5, zw = cw * 0.22;
   ctx.fillStyle = "rgba(10,12,20,0.7)"; ctx.fillRect(zx - 6, zy - 40, zw + 12, 80);

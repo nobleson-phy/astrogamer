@@ -54,20 +54,27 @@ function draw(ctx, cw, H, tt, lang) {
   const sg = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, 28); sg.addColorStop(0, "#fff2c0"); sg.addColorStop(1, "rgba(255,180,60,0)");
   ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sunX, sunY, 28, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(sunX, sunY, 12, 0, Math.PI * 2); ctx.fill();
-  // path
-  ctx.strokeStyle = "rgba(150,175,230,0.15)"; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(sunX + 14, sunY); ctx.lineTo(earthX - 20, earthY); ctx.stroke(); ctx.setLineDash([]);
-  // cycle: CME travels; total cycle 200 frames represents ~3.5 days
+  // CMEs don't fly straight — they bow and expand. Use a curved (Bezier) path.
+  const px0 = sunX + 14, py0 = sunY, px1 = earthX - 20, py1 = earthY;
+  const ctrlX = (px0 + px1) / 2, ctrlY = sunY - (px1 - px0) * 0.3; // bow upward
+  ctx.strokeStyle = "rgba(150,175,230,0.15)"; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(px0, py0); ctx.quadraticCurveTo(ctrlX, ctrlY, px1, py1); ctx.stroke(); ctx.setLineDash([]);
+  // cycle: CME travels along the curve; represents ~3.5 days
   const cyc = tt % 240, p = Math.min(cyc / 180, 1);
-  const cmeX = sunX + 14 + p * (earthX - 20 - sunX - 14);
+  const bez = (a, b, c) => (1 - p) * (1 - p) * a + 2 * (1 - p) * p * b + p * p * c;
+  const cmeX = bez(px0, ctrlX, px1), cmeY = bez(py0, ctrlY, py1);
   const arrived = p >= 1;
   // day counter
   const days = (p * 3.5).toFixed(1);
   ctx.fillStyle = C.cool; ctx.font = `11px ${mono}`; ctx.textAlign = "left"; ctx.fillText(`${t.day}: ${days} / 3.5`, 10, 16);
-  // CME bubble
+  // CME bubble — expands as it moves outward
   if (!arrived) {
-    const eg = ctx.createRadialGradient(cmeX, sunY, 2, cmeX, sunY, 18); eg.addColorStop(0, "rgba(255,180,120,0.8)"); eg.addColorStop(1, "rgba(255,120,80,0)");
-    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cmeX, sunY, 18, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "rgba(255,210,150,0.9)"; ctx.beginPath(); ctx.arc(cmeX, sunY, 5, 0, Math.PI * 2); ctx.fill();
+    const rr = 12 + p * 22;
+    const eg = ctx.createRadialGradient(cmeX, cmeY, 2, cmeX, cmeY, rr); eg.addColorStop(0, "rgba(255,180,120,0.75)"); eg.addColorStop(1, "rgba(255,120,80,0)");
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cmeX, cmeY, rr, 0, Math.PI * 2); ctx.fill();
+    const ang = Math.atan2(py1 - cmeY, px1 - cmeX);
+    ctx.strokeStyle = "rgba(255,200,150,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cmeX, cmeY, rr, ang - 0.9, ang + 0.9); ctx.stroke();
+    ctx.fillStyle = "rgba(255,210,150,0.9)"; ctx.beginPath(); ctx.arc(cmeX, cmeY, 4, 0, Math.PI * 2); ctx.fill();
   }
   // Earth with magnetosphere
   const eR = 12;

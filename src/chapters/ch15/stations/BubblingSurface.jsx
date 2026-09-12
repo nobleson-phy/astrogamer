@@ -67,7 +67,7 @@ function draw(ctx, cw, H, mode, tt, lang) {
     ctx.fillStyle = "rgba(0,0,0,0)"; // keep lanes as background
   } else {
     // differential rotation: sun disk, latitude bands, a shearing spot group
-    const cx = cw / 2, cy = H / 2, R = Math.min(cw * 0.32, H * 0.46);
+    const cx = cw / 2, cy = H / 2, R = Math.min(cw * 0.28, H * 0.36);
     const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.2, cx, cy, R);
     g.addColorStop(0, "#ffe08a"); g.addColorStop(1, "#e8952a");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
@@ -92,8 +92,9 @@ function draw(ctx, cw, H, mode, tt, lang) {
     });
     ctx.restore();
     ctx.fillStyle = C.cool; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
-    ctx.fillText(t.eq, cx, cy + R + 14); ctx.fillText(t.pole, cx, cy - R - 8);
-    ctx.fillStyle = C.sun; ctx.fillText(t.spots, cx + R * 0.7, cy + R + 28 > H - 4 ? H - 4 : cy + R + 28);
+    ctx.fillText(t.pole, cx, Math.max(cy - R - 8, 12));
+    ctx.fillText(t.eq, cx, Math.min(cy + R + 16, H - 6));
+    ctx.fillStyle = C.sun; ctx.textAlign = "left"; ctx.fillText(t.spots, 10, 16);
   }
 }
 

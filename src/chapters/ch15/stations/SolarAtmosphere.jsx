@@ -78,18 +78,19 @@ function draw(ctx, cw, H, lang) {
   ctx.fillStyle = "#ff9a52"; ctx.fillText(t.chromo, lx(0.32), ly(10000) - 8);
   ctx.fillStyle = "#8fbfff"; ctx.fillText(t.trans, trX, y0 + 30);
   ctx.fillStyle = "#c0a8ee"; ctx.fillText(t.corona, lx(0.75), ly(1300000) - 8);
-  // small visible vs X-ray sun pair, top-right
-  const sx = x1 - 90, sy = y0 + 6, sr = 14;
+  // visible vs X-ray sun pair, lower-centre (ample empty space below the curve)
+  const pairY = y1 - 34, sr = 13;
+  const vX = cw / 2 - 46, xX = cw / 2 + 46;
+  ctx.textAlign = "center"; ctx.font = `9px ${mono}`;
   // visible: bright disk
-  ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(sx, sy + 10, sr, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = C.faint; ctx.fillText(t.visible, sx, sy + 10 + sr + 10);
+  ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(vX, pairY, sr, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.faint; ctx.fillText(t.visible, vX, pairY + sr + 12);
   // X-ray: dark disk with glowing corona
-  const xx = sx + 54;
-  const cg = ctx.createRadialGradient(xx, sy + 10, sr * 0.6, xx, sy + 10, sr + 6);
+  const cg = ctx.createRadialGradient(xX, pairY, sr * 0.6, xX, pairY, sr + 6);
   cg.addColorStop(0, "rgba(180,120,255,0)"); cg.addColorStop(0.6, "rgba(180,140,255,0.7)"); cg.addColorStop(1, "rgba(120,180,255,0)");
-  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(xx, sy + 10, sr + 6, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#2a2340"; ctx.beginPath(); ctx.arc(xx, sy + 10, sr, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#c0a8ee"; ctx.fillText(t.xray, xx, sy + 10 + sr + 10);
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(xX, pairY, sr + 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#2a2340"; ctx.beginPath(); ctx.arc(xX, pairY, sr, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#c0a8ee"; ctx.fillText(t.xray, xX, pairY + sr + 12);
 }
 
 export function SolarAtmosphere() {
