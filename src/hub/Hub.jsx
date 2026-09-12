@@ -136,6 +136,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch14/index.html",
   },
+  {
+    n: 15,
+    title: { en: "The Sun: A Garden-Variety Star", ja: "太陽：ありふれた星" },
+    blurb: {
+      en: "Meet our nearest star — its layered interior, the atmosphere that grows hotter outward to a million-degree corona, Cecilia Payne's discovery that it's mostly hydrogen and helium, granulation and differential rotation, magnetic sunspots and the 11/22-year cycle, plages, prominences and coronal holes, and the CMEs and space weather that reach Earth.",
+      ja: "私たちに最も近い星に出会おう——層状の内部、外へ100万度のコロナまで熱くなる大気、主に水素とヘリウムだというセシリア・ペインの発見、粒状斑と差動回転、磁気の黒点と11年／22年周期、白斑・プロミネンス・コロナホール、そして地球に届くCMEと宇宙天気。",
+    },
+    href: "chapters/ch15/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
