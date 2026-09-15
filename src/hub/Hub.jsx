@@ -145,6 +145,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch15/index.html",
   },
+  {
+    n: 16,
+    title: { en: "The Sun: A Nuclear Powerhouse", ja: "太陽：核の発電所" },
+    blurb: {
+      en: "Discover what powers the Sun — why gravitational contraction and chemical burning fall short, Einstein's E = mc², the 600-million-tons-a-second fuel budget, the proton-proton chain, fusion versus fission, the forces and 15-million-K core that make fusion possible, energy's slow random walk outward, the neutrinos that escape in minutes, and helioseismology.",
+      ja: "太陽を動かすものを解き明かそう——重力収縮や化学燃焼では足りない理由、アインシュタインの E = mc²、毎秒6億トンの燃料収支、陽子-陽子連鎖、核融合対核分裂、核融合を可能にする力と1,500万Kの核、外へ向かう遅いランダムウォーク、数分で逃げるニュートリノ、そして日震学。",
+    },
+    href: "chapters/ch16/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
