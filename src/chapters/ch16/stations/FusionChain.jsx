@@ -49,80 +49,87 @@ const STR = {
 
 function P(ctx, x, y, kind) { // proton red, neutron grey
   ctx.fillStyle = kind === "n" ? "#9aa0ac" : "#e0774f";
-  ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.font = `8px ${mono}`; ctx.textAlign = "center"; ctx.fillText(kind === "n" ? "n" : "p", x, y + 3);
+  ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.beginPath(); ctx.arc(x - 4, y - 4, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = `700 13px ${mono}`; ctx.textAlign = "center"; ctx.fillText(kind === "n" ? "n" : "p", x, y + 5);
+}
+function arrow(ctx, x0, x1, y) {
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+  ctx.fillStyle = C.muted; ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x1 - 7, y - 5); ctx.lineTo(x1 - 7, y + 5); ctx.closePath(); ctx.fill();
 }
 
 function drawChain(ctx, cw, H, step, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const y = H * 0.36;
-  ctx.font = `10px ${mono}`; ctx.textAlign = "center";
+  const y = H * 0.4, dy = 17;
+  ctx.font = `12px ${mono}`; ctx.textAlign = "center";
   if (step === 0) {
     // two protons -> deuterium + positron + neutrino
-    P(ctx, cw * 0.2, y, "p"); P(ctx, cw * 0.2, y + 22, "p");
-    ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(cw * 0.28, y + 11); ctx.lineTo(cw * 0.44, y + 11); ctx.stroke();
-    // deuterium
-    P(ctx, cw * 0.52, y + 4, "p"); P(ctx, cw * 0.52, y + 18, "n");
-    ctx.fillStyle = "#8fc0e8"; ctx.fillText(lang === "ja" ? "重水素" : "deuterium", cw * 0.52, y + 40);
+    P(ctx, cw * 0.15, y - dy, "p"); P(ctx, cw * 0.15, y + dy, "p");
+    arrow(ctx, cw * 0.24, cw * 0.42, y);
+    // deuterium (bound p + n)
+    P(ctx, cw * 0.52, y - dy, "p"); P(ctx, cw * 0.52, y + dy, "n");
+    ctx.fillStyle = "#8fc0e8"; ctx.font = `12px ${mono}`; ctx.fillText(lang === "ja" ? "重水素" : "deuterium", cw * 0.52, y + dy + 34);
     // positron + neutrino
-    ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(cw * 0.72, y - 6, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#ffd86b"; ctx.fillText("e⁺", cw * 0.72, y - 14);
-    ctx.fillStyle = "#a9d0ff"; ctx.beginPath(); ctx.arc(cw * 0.82, y + 22, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#a9d0ff"; ctx.fillText("ν", cw * 0.82, y + 36);
-    ctx.fillStyle = C.text; ctx.fillText(lang === "ja" ? "陽子＋陽子 → 重水素 ＋ 陽電子(e⁺) ＋ ニュートリノ(ν)" : "p + p → deuterium + positron (e⁺) + neutrino (ν)", cw / 2, H - 16);
+    ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(cw * 0.74, y - 24, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#0a0c14"; ctx.font = `700 11px ${mono}`; ctx.fillText("e⁺", cw * 0.74, y - 20);
+    ctx.fillStyle = "#a9d0ff"; ctx.beginPath(); ctx.arc(cw * 0.86, y + 24, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#0a0c14"; ctx.fillText("ν", cw * 0.86, y + 28);
+    ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.fillText(lang === "ja" ? "陽子＋陽子 → 重水素 ＋ 陽電子(e⁺) ＋ ニュートリノ(ν)" : "p + p → deuterium + positron (e⁺) + neutrino (ν)", cw / 2, H - 14);
   } else if (step === 1) {
     // deuterium + proton -> He-3 + gamma
-    P(ctx, cw * 0.18, y + 4, "p"); P(ctx, cw * 0.18, y + 18, "n");
-    P(ctx, cw * 0.3, y + 11, "p");
-    ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(cw * 0.38, y + 11); ctx.lineTo(cw * 0.52, y + 11); ctx.stroke();
-    P(ctx, cw * 0.6, y + 2, "p"); P(ctx, cw * 0.6, y + 16, "p"); P(ctx, cw * 0.66, y + 9, "n");
-    ctx.fillStyle = "#8fc0e8"; ctx.fillText("He-3", cw * 0.63, y + 38);
-    ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cw * 0.78, y); ctx.lineTo(cw * 0.9, y + 20); ctx.stroke();
-    ctx.fillStyle = "#ffd86b"; ctx.fillText("γ", cw * 0.86, y - 4);
-    ctx.fillStyle = C.text; ctx.fillText(lang === "ja" ? "重水素 ＋ 陽子 → ヘリウム3 ＋ ガンマ線(γ)" : "deuterium + proton → helium-3 + gamma ray (γ)", cw / 2, H - 16);
+    P(ctx, cw * 0.14, y - dy, "p"); P(ctx, cw * 0.14, y + dy, "n");
+    P(ctx, cw * 0.28, y, "p");
+    arrow(ctx, cw * 0.37, cw * 0.53, y);
+    // He-3 (2p + 1n) as a small cluster
+    P(ctx, cw * 0.62, y - dy, "p"); P(ctx, cw * 0.62, y + dy, "p"); P(ctx, cw * 0.70, y, "n");
+    ctx.fillStyle = "#8fc0e8"; ctx.font = `12px ${mono}`; ctx.fillText("He-3", cw * 0.66, y + dy + 34);
+    ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cw * 0.82, y - 24); ctx.lineTo(cw * 0.92, y - 4); ctx.stroke();
+    ctx.fillStyle = "#ffd86b"; ctx.font = `700 13px ${mono}`; ctx.fillText("γ", cw * 0.9, y - 28);
+    ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.fillText(lang === "ja" ? "重水素 ＋ 陽子 → ヘリウム3 ＋ ガンマ線(γ)" : "deuterium + proton → helium-3 + gamma ray (γ)", cw / 2, H - 14);
   } else {
     // two He-3 -> He-4 + 2 protons
-    [cw * 0.16, cw * 0.30].forEach((cxg) => { P(ctx, cxg, y + 2, "p"); P(ctx, cxg, y + 16, "p"); P(ctx, cxg + 6, y + 9, "n"); });
-    ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(cw * 0.42, y + 9); ctx.lineTo(cw * 0.56, y + 9); ctx.stroke();
-    // He-4
-    P(ctx, cw * 0.64, y + 2, "p"); P(ctx, cw * 0.64, y + 16, "p"); P(ctx, cw * 0.72, y + 2, "n"); P(ctx, cw * 0.72, y + 16, "n");
-    ctx.fillStyle = "#8fc0e8"; ctx.fillText("He-4", cw * 0.68, y + 38);
-    P(ctx, cw * 0.88, y, "p"); P(ctx, cw * 0.88, y + 18, "p");
-    ctx.fillStyle = C.text; ctx.fillText(lang === "ja" ? "ヘリウム3 ×2 → ヘリウム4 ＋ 陽子 ×2" : "helium-3 + helium-3 → helium-4 + 2 protons", cw / 2, H - 16);
+    [cw * 0.13, cw * 0.30].forEach((cxg) => { P(ctx, cxg, y - dy, "p"); P(ctx, cxg, y + dy, "p"); P(ctx, cxg + 9, y, "n"); });
+    arrow(ctx, cw * 0.44, cw * 0.58, y);
+    // He-4 (2p + 2n)
+    P(ctx, cw * 0.66, y - dy, "p"); P(ctx, cw * 0.66, y + dy, "p"); P(ctx, cw * 0.75, y - dy, "n"); P(ctx, cw * 0.75, y + dy, "n");
+    ctx.fillStyle = "#8fc0e8"; ctx.font = `12px ${mono}`; ctx.fillText("He-4", cw * 0.705, y + dy + 34);
+    P(ctx, cw * 0.90, y - dy, "p"); P(ctx, cw * 0.90, y + dy, "p");
+    ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.fillText(lang === "ja" ? "ヘリウム3 ×2 → ヘリウム4 ＋ 陽子 ×2" : "helium-3 + helium-3 → helium-4 + 2 protons", cw / 2, H - 14);
   }
 }
 
 function drawFission(ctx, cw, H, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const midY = H * 0.44;
+  const midY = H * 0.46;
   // FUSION (left): two small -> one bigger + energy
   const fx = cw * 0.26;
-  ctx.fillStyle = C.good; ctx.font = `700 12px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "融合" : "FUSION", fx, 26);
-  P(ctx, fx - 20, midY, "p"); P(ctx, fx - 6, midY, "p");
-  ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(fx + 6, midY); ctx.lineTo(fx + 20, midY); ctx.stroke();
-  ctx.fillStyle = "#8fc0e8"; ctx.beginPath(); ctx.arc(fx + 40, midY, 13, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) { ctx.beginPath(); ctx.moveTo(fx + 40 + Math.cos(a) * 15, midY + Math.sin(a) * 15); ctx.lineTo(fx + 40 + Math.cos(a) * 22, midY + Math.sin(a) * 22); ctx.stroke(); }
-  ctx.fillStyle = C.muted; ctx.font = `9px ${mono}`; ctx.fillText(lang === "ja" ? "軽い核 → 重い核（太陽）" : "light → heavier (the Sun)", fx, midY + 50);
+  ctx.fillStyle = C.good; ctx.font = `700 13px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "融合" : "FUSION", fx, 28);
+  P(ctx, fx - 30, midY, "p"); P(ctx, fx - 2, midY, "p");
+  arrow(ctx, fx + 14, fx + 34, midY);
+  ctx.fillStyle = "#8fc0e8"; ctx.beginPath(); ctx.arc(fx + 58, midY, 18, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = `700 11px ${mono}`; ctx.fillText("He", fx + 58, midY + 4);
+  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) { ctx.beginPath(); ctx.moveTo(fx + 58 + Math.cos(a) * 21, midY + Math.sin(a) * 21); ctx.lineTo(fx + 58 + Math.cos(a) * 29, midY + Math.sin(a) * 29); ctx.stroke(); }
+  ctx.fillStyle = C.muted; ctx.font = `10px ${mono}`; ctx.fillText(lang === "ja" ? "軽い核 → 重い核（太陽）" : "light → heavier (the Sun)", fx, midY + 58);
   // divider
   ctx.strokeStyle = "rgba(150,175,230,0.25)"; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(cw * 0.5, 20); ctx.lineTo(cw * 0.5, H - 20); ctx.stroke(); ctx.setLineDash([]);
   // FISSION (right): one big -> two smaller + energy
   const gx = cw * 0.74;
-  ctx.fillStyle = "#e0774f"; ctx.font = `700 12px ${mono}`; ctx.fillText(lang === "ja" ? "分裂" : "FISSION", gx, 26);
-  ctx.fillStyle = "#c88a5a"; ctx.beginPath(); ctx.arc(gx - 24, midY, 15, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.font = `9px ${mono}`; ctx.fillText("U", gx - 24, midY + 3);
-  ctx.strokeStyle = C.muted; ctx.beginPath(); ctx.moveTo(gx - 6, midY); ctx.lineTo(gx + 8, midY); ctx.stroke();
-  ctx.fillStyle = "#b0a48c"; ctx.beginPath(); ctx.arc(gx + 24, midY - 10, 9, 0, Math.PI * 2); ctx.arc(gx + 26, midY + 12, 8, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) { ctx.beginPath(); ctx.moveTo(gx + 24 + Math.cos(a) * 18, midY + Math.sin(a) * 18); ctx.lineTo(gx + 24 + Math.cos(a) * 25, midY + Math.sin(a) * 25); ctx.stroke(); }
-  ctx.fillStyle = C.muted; ctx.font = `9px ${mono}`; ctx.fillText(lang === "ja" ? "重い核 → 軽い核（原子炉）" : "heavy → lighter (reactors)", gx, midY + 50);
+  ctx.fillStyle = "#e0774f"; ctx.font = `700 13px ${mono}`; ctx.fillText(lang === "ja" ? "分裂" : "FISSION", gx, 28);
+  ctx.fillStyle = "#c88a5a"; ctx.beginPath(); ctx.arc(gx - 32, midY, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = `700 11px ${mono}`; ctx.fillText("U", gx - 32, midY + 4);
+  arrow(ctx, gx - 8, gx + 10, midY);
+  ctx.fillStyle = "#b0a48c"; ctx.beginPath(); ctx.arc(gx + 30, midY - 13, 12, 0, Math.PI * 2); ctx.arc(gx + 34, midY + 15, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2; for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) { ctx.beginPath(); ctx.moveTo(gx + 30 + Math.cos(a) * 24, midY + Math.sin(a) * 24); ctx.lineTo(gx + 30 + Math.cos(a) * 32, midY + Math.sin(a) * 32); ctx.stroke(); }
+  ctx.fillStyle = C.muted; ctx.font = `10px ${mono}`; ctx.fillText(lang === "ja" ? "重い核 → 軽い核（原子炉）" : "heavy → lighter (reactors)", gx, midY + 58);
 }
 
 export function FusionChain() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 250;
+  const H = 280;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [mode, setMode] = useState("chain");

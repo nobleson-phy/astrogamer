@@ -45,27 +45,30 @@ const STR = {
 function draw(ctx, cw, H, grams, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  // 4 H -> He diagram (top)
-  const cy = H * 0.32;
-  ctx.font = `11px ${mono}`; ctx.textAlign = "center";
-  const hx = cw * 0.16;
+  // 4 H -> He diagram (top), enlarged for clarity
+  const cy = H * 0.3;
+  ctx.textAlign = "center";
+  const hx = cw * 0.14;
   for (let i = 0; i < 4; i++) {
-    const x = hx + (i % 2) * 26, y = cy - 13 + Math.floor(i / 2) * 26;
-    ctx.fillStyle = "#e0774f"; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#fff"; ctx.font = `9px ${mono}`; ctx.fillText("H", x, y + 3);
+    const x = hx + (i % 2) * 34, y = cy - 17 + Math.floor(i / 2) * 34;
+    ctx.fillStyle = "#e0774f"; ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.beginPath(); ctx.arc(x - 4, y - 4, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = `700 12px ${mono}`; ctx.fillText("H", x, y + 4);
   }
-  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(hx + 44, cy); ctx.lineTo(cw * 0.42, cy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cw * 0.42, cy); ctx.lineTo(cw * 0.42 - 6, cy - 4); ctx.lineTo(cw * 0.42 - 6, cy + 4); ctx.closePath(); ctx.fillStyle = C.muted; ctx.fill();
+  // arrow
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx + 34 + 20, cy); ctx.lineTo(cw * 0.40, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cw * 0.40, cy); ctx.lineTo(cw * 0.40 - 7, cy - 5); ctx.lineTo(cw * 0.40 - 7, cy + 5); ctx.closePath(); ctx.fillStyle = C.muted; ctx.fill();
   // He
   const ex = cw * 0.52;
-  ctx.fillStyle = "#8fc0e8"; ctx.beginPath(); ctx.arc(ex, cy, 15, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.font = `10px ${mono}`; ctx.fillText("He", ex, cy + 3);
+  ctx.fillStyle = "#8fc0e8"; ctx.beginPath(); ctx.arc(ex, cy, 21, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.beginPath(); ctx.arc(ex - 6, cy - 6, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = `700 13px ${mono}`; ctx.fillText("He", ex, cy + 4);
   // energy burst
-  const gx = cw * 0.72;
-  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2;
-  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) { ctx.beginPath(); ctx.moveTo(gx + Math.cos(a) * 8, cy + Math.sin(a) * 8); ctx.lineTo(gx + Math.cos(a) * 18, cy + Math.sin(a) * 18); ctx.stroke(); }
-  ctx.fillStyle = C.sun; ctx.font = `9px ${mono}`; ctx.fillText("+ energy", gx, cy + 34);
-  ctx.fillStyle = "#ff9a52"; ctx.fillText("−0.71% mass", (ex + gx) / 2, cy - 26);
+  const gx = cw * 0.74;
+  ctx.strokeStyle = "#ffd86b"; ctx.lineWidth = 2.5;
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) { ctx.beginPath(); ctx.moveTo(gx + Math.cos(a) * 12, cy + Math.sin(a) * 12); ctx.lineTo(gx + Math.cos(a) * 26, cy + Math.sin(a) * 26); ctx.stroke(); }
+  ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.fillText("+ energy", gx, cy + 42);
+  ctx.fillStyle = "#ff9a52"; ctx.font = `11px ${mono}`; ctx.fillText("−0.71% mass", (ex + gx) / 2, cy - 34);
   // energy bar (bottom): log scale of E = m c^2
   const kg = grams / 1000, E = kg * c2; // joules
   const y1 = H - 34, x0 = 20, x1 = cw - 20, barY = H * 0.62;

@@ -89,33 +89,35 @@ function drawSeismo(ctx, cw, H, tt, lang) {
 function drawModel(ctx, cw, H, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  ctx.font = `9px ${mono}`; ctx.textAlign = "center";
+  ctx.textAlign = "center";
+  const inX = cw * 0.17, midX = cw * 0.5, outX = cw * 0.83;
+  const inW = Math.min(cw * 0.3, 168), outW = Math.min(cw * 0.3, 168), bh = 30;
+  // column headers
+  ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`;
+  ctx.fillText(lang === "ja" ? "物理法則" : "physics laws", inX, 18);
+  ctx.fillText(lang === "ja" ? "観測と照合" : "match observations", outX, 18);
   // inputs (left column)
-  const inX = cw * 0.18, midX = cw * 0.5, outX = cw * 0.82;
   t.inputs.forEach((s, i) => {
-    const y = H * 0.2 + i * (H * 0.18);
-    ctx.fillStyle = "rgba(224,119,79,0.2)"; ctx.strokeStyle = "#e0774f"; ctx.lineWidth = 1;
-    ctx.fillRect(inX - 62, y - 11, 124, 22); ctx.strokeRect(inX - 62, y - 11, 124, 22);
-    ctx.fillStyle = C.text; ctx.fillText(s, inX, y + 3);
-    // arrow to model
-    ctx.strokeStyle = "rgba(150,175,230,0.4)"; ctx.beginPath(); ctx.moveTo(inX + 62, y); ctx.lineTo(midX - 44, H / 2); ctx.stroke();
+    const y = H * 0.22 + i * (H * 0.19);
+    ctx.strokeStyle = "rgba(150,175,230,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(inX + inW / 2, y); ctx.lineTo(midX - 56, H / 2); ctx.stroke();
+    ctx.fillStyle = "rgba(224,119,79,0.22)"; ctx.strokeStyle = "#e0774f"; ctx.lineWidth = 1.5;
+    ctx.fillRect(inX - inW / 2, y - bh / 2, inW, bh); ctx.strokeRect(inX - inW / 2, y - bh / 2, inW, bh);
+    ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.fillText(s, inX, y + 4);
   });
   // model box (center)
-  ctx.fillStyle = "rgba(255,207,107,0.15)"; ctx.strokeStyle = C.sun; ctx.lineWidth = 1.5;
-  ctx.fillRect(midX - 44, H / 2 - 22, 88, 44); ctx.strokeRect(midX - 44, H / 2 - 22, 88, 44);
-  ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.fillText(t.modelBox, midX, H / 2 + 3);
+  const mw = Math.min(cw * 0.22, 120), mh = 54;
+  ctx.fillStyle = "rgba(255,207,107,0.18)"; ctx.strokeStyle = C.sun; ctx.lineWidth = 2;
+  ctx.fillRect(midX - mw / 2, H / 2 - mh / 2, mw, mh); ctx.strokeRect(midX - mw / 2, H / 2 - mh / 2, mw, mh);
+  ctx.fillStyle = C.sun; ctx.font = `700 12px ${mono}`; ctx.fillText(t.modelBox, midX, H / 2 + 4);
   // outputs (right column) with match check
   t.outputs.forEach((s, i) => {
     const y = H * 0.26 + i * (H * 0.24);
-    ctx.fillStyle = "rgba(143,192,232,0.2)"; ctx.strokeStyle = "#8fc0e8"; ctx.lineWidth = 1;
-    ctx.fillRect(outX - 58, y - 11, 116, 22); ctx.strokeRect(outX - 58, y - 11, 116, 22);
-    ctx.fillStyle = C.text; ctx.font = `9px ${mono}`; ctx.fillText(s, outX - 6, y + 3);
-    ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.fillText("✓", outX + 46, y + 3);
-    ctx.strokeStyle = "rgba(150,175,230,0.4)"; ctx.beginPath(); ctx.moveTo(midX + 44, H / 2); ctx.lineTo(outX - 58, y); ctx.stroke();
+    ctx.strokeStyle = "rgba(150,175,230,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(midX + mw / 2, H / 2); ctx.lineTo(outX - outW / 2, y); ctx.stroke();
+    ctx.fillStyle = "rgba(143,192,232,0.22)"; ctx.strokeStyle = "#8fc0e8"; ctx.lineWidth = 1.5;
+    ctx.fillRect(outX - outW / 2, y - bh / 2, outW, bh); ctx.strokeRect(outX - outW / 2, y - bh / 2, outW, bh);
+    ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.fillText(s, outX - 8, y + 4);
+    ctx.fillStyle = C.good; ctx.font = `700 13px ${mono}`; ctx.fillText("✓", outX + outW / 2 - 12, y + 5);
   });
-  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
-  ctx.fillText(lang === "ja" ? "物理法則" : "physics laws", inX, H * 0.1);
-  ctx.fillText(lang === "ja" ? "観測と照合" : "match observations", outX, H * 0.1);
 }
 
 export function ModelingSun() {
