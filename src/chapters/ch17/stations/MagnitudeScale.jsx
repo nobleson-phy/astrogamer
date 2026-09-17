@@ -52,12 +52,12 @@ function draw(ctx, cw, H, mag, lang) {
   ctx.clearRect(0, 0, cw, H);
   // number line from -27 to +8, brighter (negative) on the LEFT
   const x0 = 20, x1 = cw - 20, y = H * 0.4;
-  const mMin = -27, mMax = 8;
+  const mMin = -30, mMax = 8;
   const mx = (m) => x0 + (m - mMin) / (mMax - mMin) * (x1 - x0);
   ctx.strokeStyle = "rgba(150,175,230,0.4)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
   // ticks
   ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
-  for (let m = -25; m <= 5; m += 5) { const X = mx(m); ctx.beginPath(); ctx.moveTo(X, y - 4); ctx.lineTo(X, y + 4); ctx.strokeStyle = "rgba(150,175,230,0.4)"; ctx.stroke(); ctx.fillStyle = C.faint; ctx.fillText(m, X, y + 16); }
+  for (let m = -30; m <= 5; m += 5) { const X = mx(m); ctx.beginPath(); ctx.moveTo(X, y - 4); ctx.lineTo(X, y + 4); ctx.strokeStyle = "rgba(150,175,230,0.4)"; ctx.stroke(); ctx.fillStyle = C.faint; ctx.fillText(m, X, y + 16); }
   ctx.fillStyle = C.good; ctx.textAlign = "left"; ctx.fillText("← " + t.brighter, x0, y - 20);
   ctx.fillStyle = C.muted; ctx.textAlign = "right"; ctx.fillText(t.fainter + " →", x1, y - 20);
   // reference marks
@@ -73,7 +73,8 @@ function draw(ctx, cw, H, mag, lang) {
   // brightness ratio vs Vega (mag 0)
   const ratio = Math.pow(100, (0 - mag) / 5); // >1 means brighter than Vega
   ctx.fillStyle = C.text; ctx.font = `700 14px ${mono}`; ctx.textAlign = "center";
-  const rstr = ratio >= 1 ? `${ratio.toFixed(ratio > 20 ? 0 : 1)}× ${t.brighter}` : `${(1 / ratio).toFixed(1)}× ${t.fainter}`;
+  const fmt = (v) => v >= 1e4 ? v.toExponential(1) : v > 20 ? v.toFixed(0) : v.toFixed(1);
+  const rstr = ratio >= 1 ? `${fmt(ratio)}× ${t.brighter}` : `${fmt(1 / ratio)}× ${t.fainter}`;
   ctx.fillText(`${t.ratio} ${t.vs}:  ${rstr}`, cw / 2, H - 30);
   // 5-mag = 100x reminder bar
   ctx.fillStyle = C.cool; ctx.font = `10px ${mono}`; ctx.fillText("Δ5 mag  =  ×100 brightness", cw / 2, H - 10);
@@ -116,7 +117,7 @@ export function MagnitudeScale() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <span style={{ fontFamily: mono, fontSize: 12, color: C.cool, whiteSpace: "nowrap" }}>{t.mag}</span>
-          <input type="range" min="-5" max="8" step="0.5" value={mag}
+          <input type="range" min="-30" max="8" step="0.5" value={mag}
             onChange={(e) => setMag(parseFloat(e.target.value))} style={{ flex: 1, accentColor: C.sun }} />
           <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, width: 42, textAlign: "right" }}>{mag.toFixed(1)}</span>
         </div>

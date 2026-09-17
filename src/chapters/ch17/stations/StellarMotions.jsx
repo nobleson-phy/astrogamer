@@ -89,33 +89,37 @@ function drawTrans(ctx, cw, H, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
   // top: two stars same proper motion, different distance
-  const y = H * 0.24;
-  [[cw * 0.3, t.near, 1], [cw * 0.7, t.far, 2]].forEach(([x, label, d]) => {
-    ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
-    // same angular arrow, but far star's true velocity is longer
-    ctx.strokeStyle = "#8fe0a0"; ctx.lineWidth = 2; const alen = 26;
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + alen, y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + alen, y); ctx.lineTo(x + alen - 6, y - 4); ctx.lineTo(x + alen - 6, y + 4); ctx.closePath(); ctx.fillStyle = "#8fe0a0"; ctx.fill();
-    ctx.fillStyle = C.muted; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(label, x, y - 12);
-    if (d === 2) { ctx.fillStyle = C.sun; ctx.fillText(t.tv, x, y + 22); }
+  const y = H * 0.2;
+  [[cw * 0.28, t.near, 1], [cw * 0.68, t.far, 2]].forEach(([x, label, d]) => {
+    ctx.fillStyle = "#ffe08a"; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+    // same angular drift, but the far star's TRUE velocity is longer
+    ctx.strokeStyle = "#8fe0a0"; ctx.lineWidth = 3; const alen = d === 2 ? 74 : 40;
+    ctx.beginPath(); ctx.moveTo(x + 10, y); ctx.lineTo(x + 10 + alen, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 10 + alen, y); ctx.lineTo(x + 4 + alen, y - 6); ctx.lineTo(x + 4 + alen, y + 6); ctx.closePath(); ctx.fillStyle = "#8fe0a0"; ctx.fill();
+    ctx.fillStyle = C.text; ctx.font = `12px ${mono}`; ctx.textAlign = "center"; ctx.fillText(label, x, y - 16);
+    if (d === 2) { ctx.fillStyle = C.sun; ctx.font = `11px ${mono}`; ctx.fillText(t.tv, x + 30, y + 24); }
   });
-  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.same, cw / 2, y + 40);
-  // bottom: 3D velocity vector triangle
-  const ox = cw * 0.3, oy = H * 0.86;
-  ctx.strokeStyle = "#8fb8ff"; ctx.lineWidth = 2; // radial (horizontal)
-  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + 120, oy); ctx.stroke();
-  ctx.fillStyle = "#8fb8ff"; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.radC, ox + 60, oy + 14);
-  ctx.strokeStyle = "#8fe0a0"; ctx.beginPath(); ctx.moveTo(ox + 120, oy); ctx.lineTo(ox + 120, oy - 70); ctx.stroke(); // transverse (vertical)
-  ctx.fillStyle = "#8fe0a0"; ctx.save(); ctx.translate(ox + 134, oy - 35); ctx.rotate(-Math.PI / 2); ctx.fillText(t.tranC, 0, 0); ctx.restore();
-  ctx.strokeStyle = C.sun; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + 120, oy - 70); ctx.stroke(); // space velocity (hypotenuse)
-  ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "left"; ctx.fillText(t.space, ox + 20, oy - 44);
+  ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.same, cw / 2, y + 48);
+  // bottom: large 3D velocity vector triangle
+  const ox = cw * 0.24, oy = H * 0.92, radLen = Math.min(cw * 0.4, 220), tranLen = H * 0.36;
+  ctx.strokeStyle = "#8fb8ff"; ctx.lineWidth = 3; // radial (horizontal)
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + radLen, oy); ctx.stroke();
+  ctx.fillStyle = "#8fb8ff"; ctx.beginPath(); ctx.moveTo(ox + radLen, oy); ctx.lineTo(ox + radLen - 8, oy - 5); ctx.lineTo(ox + radLen - 8, oy + 5); ctx.closePath(); ctx.fill();
+  ctx.font = `12px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.radC, ox + radLen / 2, oy + 16);
+  ctx.strokeStyle = "#8fe0a0"; ctx.lineWidth = 3; // transverse (vertical)
+  ctx.beginPath(); ctx.moveTo(ox + radLen, oy); ctx.lineTo(ox + radLen, oy - tranLen); ctx.stroke();
+  ctx.fillStyle = "#8fe0a0"; ctx.beginPath(); ctx.moveTo(ox + radLen, oy - tranLen); ctx.lineTo(ox + radLen - 5, oy - tranLen + 8); ctx.lineTo(ox + radLen + 5, oy - tranLen + 8); ctx.closePath(); ctx.fill();
+  ctx.save(); ctx.translate(ox + radLen + 16, oy - tranLen / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.fillText(t.tranC, 0, 0); ctx.restore();
+  ctx.strokeStyle = C.sun; ctx.lineWidth = 3.5; // space velocity (hypotenuse)
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + radLen, oy - tranLen); ctx.stroke();
+  ctx.fillStyle = C.sun; ctx.font = `700 12px ${mono}`; ctx.textAlign = "left"; ctx.fillText(t.space, ox + radLen * 0.16, oy - tranLen * 0.4);
 }
 
 export function StellarMotions() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 250;
+  const H = 280;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [mode, setMode] = useState("radial");
