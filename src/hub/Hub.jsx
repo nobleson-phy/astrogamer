@@ -154,6 +154,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch16/index.html",
   },
+  {
+    n: 17,
+    title: { en: "Analyzing Starlight", ja: "星の光を読み解く" },
+    blurb: {
+      en: "Learn how starlight reveals a star — apparent brightness versus true luminosity and the inverse-square law, the backwards magnitude scale, color as a thermometer via Wien's law, the OBAFGKM spectral classes and cool L/T/Y brown dwarfs, Annie Jump Cannon and the meaning of 'metals', pressure and rotation broadening of spectral lines, and the Doppler shifts and proper motions that give a star's 3D velocity.",
+      ja: "星の光がどう星を明かすかを学ぼう——見かけの明るさと真の光度、逆二乗の法則、逆向きの等級スケール、ウィーンの法則による温度計としての色、OBAFGKMの分光型と冷たいL/T/Y褐色矮星、アニー・ジャンプ・キャノンと「金属」の意味、スペクトル線の圧力・自転広がり、そして星の3次元速度を与えるドップラー偏移と固有運動。",
+    },
+    href: "chapters/ch17/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
