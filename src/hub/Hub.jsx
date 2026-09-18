@@ -163,6 +163,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch17/index.html",
   },
+  {
+    n: 18,
+    title: { en: "The Stars: A Celestial Census", ja: "星々：天の国勢調査" },
+    blurb: {
+      en: "Take a census of the stars — the light-year and a neighborhood ruled by faint red dwarfs, visual and spectroscopic binaries that let us weigh stars with Kepler's law, eclipsing pairs that reveal sizes, the mass threshold between stars and brown dwarfs, lunar occultation and Earth-sized white dwarfs, the H–R diagram, and why mass sets a star's luminosity and lifespan.",
+      ja: "星の国勢調査をしよう——光年と暗い赤色矮星が支配する近傍、ケプラーの法則で星の重さを測れる実視・分光連星、大きさを明かす食連星、星と褐色矮星を分ける質量のしきい値、月による掩蔽と地球サイズの白色矮星、H–R図、そしてなぜ質量が星の光度と寿命を決めるのか。",
+    },
+    href: "chapters/ch18/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
