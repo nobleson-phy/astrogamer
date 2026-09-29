@@ -61,47 +61,56 @@ function drawNeigh(ctx, cw, H, lang) {
   const sx = 30, sy = H / 2;
   ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Sun", sx, sy + 20);
-  const x0 = 60, x1 = cw - 20, maxLy = 9.5;
+  const x0 = 60, x1 = cw - 24, maxLy = 11;
   NEAR.forEach((s, i) => {
     const x = x0 + (s.ly / maxLy) * (x1 - x0);
     const y = sy - 40 + i * 26;
     ctx.strokeStyle = "rgba(150,175,230,0.15)"; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(x, y); ctx.stroke();
     ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(x, y, i === 0 ? 6 : 5, 0, Math.PI * 2); ctx.fill();
     if (i === 0) { ctx.strokeStyle = s.col; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke(); }
-    ctx.fillStyle = C.text; ctx.font = `10px ${mono}`; ctx.textAlign = "left";
-    ctx.fillText(`${lang === "ja" ? s.ja : s.en}  ·  ${s.ly} ly`, x + 12, y + 3);
+    // place the label to the left of the dot when it's near the right edge, so it never clips
+    const label = `${lang === "ja" ? s.ja : s.en}  ·  ${s.ly} ly`;
+    ctx.fillStyle = C.text; ctx.font = `10px ${mono}`;
+    if (x > cw * 0.6) { ctx.textAlign = "right"; ctx.fillText(label, x - 12, y + 3); }
+    else { ctx.textAlign = "left"; ctx.fillText(label, x + 12, y + 3); }
   });
 }
 
 function drawGaia(ctx, cw, H, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const wob = Math.sin(tt * 0.08) * 3;
+  const wob = Math.sin(tt * 0.08) * 5;
   // ground (left): atmosphere layer, blurry star, big error bar
-  const gx = cw * 0.28, gy = H * 0.42;
-  ctx.fillStyle = "rgba(80,120,180,0.15)"; ctx.fillRect(gx - 60, gy - 30, 120, 60); // atmosphere
-  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "大気" : "atmosphere", gx, gy - 34);
-  const bg = ctx.createRadialGradient(gx + wob, gy, 1, gx + wob, gy, 14); bg.addColorStop(0, "rgba(255,240,200,0.8)"); bg.addColorStop(1, "rgba(255,220,150,0)");
-  ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(gx + wob, gy, 14, 0, Math.PI * 2); ctx.fill();
+  const gx = cw * 0.28, gy = H * 0.46;
+  ctx.fillStyle = "rgba(80,120,180,0.16)"; ctx.fillRect(gx - 84, gy - 46, 168, 92); // atmosphere
+  ctx.fillStyle = C.faint; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "大気" : "atmosphere", gx, gy - 52);
+  const bg = ctx.createRadialGradient(gx + wob, gy, 1, gx + wob, gy, 22); bg.addColorStop(0, "rgba(255,240,200,0.85)"); bg.addColorStop(1, "rgba(255,220,150,0)");
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(gx + wob, gy, 22, 0, Math.PI * 2); ctx.fill();
   // big error bar
-  ctx.strokeStyle = C.bad; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx - 22, gy + 30); ctx.lineTo(gx + 22, gy + 30); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(gx - 22, gy + 26); ctx.lineTo(gx - 22, gy + 34); ctx.moveTo(gx + 22, gy + 26); ctx.lineTo(gx + 22, gy + 34); ctx.stroke();
-  ctx.fillStyle = C.bad; ctx.font = `10px ${mono}`; ctx.fillText(t.ground, gx, gy + 50);
-  // space (right): sharp star, tiny error bar
+  ctx.strokeStyle = C.bad; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx - 34, gy + 44); ctx.lineTo(gx + 34, gy + 44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx - 34, gy + 38); ctx.lineTo(gx - 34, gy + 50); ctx.moveTo(gx + 34, gy + 38); ctx.lineTo(gx + 34, gy + 50); ctx.stroke();
+  ctx.fillStyle = C.bad; ctx.font = `11px ${mono}`; ctx.fillText(t.ground, gx, gy + 70);
+  // space (right): sharp star, tiny error bar, larger Gaia satellite
   const px = cw * 0.72, py = gy;
-  ctx.fillStyle = "#ffe8b0"; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = C.good; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px - 4, py + 30); ctx.lineTo(px + 4, py + 30); ctx.stroke();
-  ctx.fillStyle = C.good; ctx.fillText(t.space, px, py + 50);
-  // Gaia satellite icon
-  ctx.fillStyle = "#c9c2b4"; ctx.fillRect(px - 6, py - 40, 12, 8); ctx.fillStyle = "#8fb8d8"; ctx.fillRect(px - 14, py - 39, 6, 6); ctx.fillRect(px + 8, py - 39, 6, 6);
-  ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, py - 32); ctx.lineTo(px, py - 4); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = "#ffe8b0"; ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = C.good; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px - 6, py + 44); ctx.lineTo(px + 6, py + 44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px - 6, py + 40); ctx.lineTo(px - 6, py + 48); ctx.moveTo(px + 6, py + 40); ctx.lineTo(px + 6, py + 48); ctx.stroke();
+  ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.fillText(t.space, px, py + 70);
+  // Gaia satellite icon (bigger, with sunshield + panels)
+  const satY = py - 54;
+  ctx.fillStyle = "#c9c2b4"; ctx.fillRect(px - 12, satY, 24, 16);              // body
+  ctx.fillStyle = "#5a6470"; ctx.beginPath(); ctx.ellipse(px, satY + 22, 24, 6, 0, 0, Math.PI * 2); ctx.fill(); // sunshield disk
+  ctx.fillStyle = "#8fb8d8"; ctx.fillRect(px - 26, satY + 2, 12, 12); ctx.fillRect(px + 14, satY + 2, 12, 12); // panels
+  ctx.strokeStyle = "rgba(120,150,210,0.4)"; ctx.lineWidth = 1; ctx.strokeRect(px - 26, satY + 2, 12, 12); ctx.strokeRect(px + 14, satY + 2, 12, 12);
+  ctx.fillStyle = C.cool; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText("Gaia", px, satY - 4);
+  ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, satY + 28); ctx.lineTo(px, py - 6); ctx.stroke(); ctx.setLineDash([]);
 }
 
 export function NearestNeighbors() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 240;
+  const H = 260;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [mode, setMode] = useState("neigh");
