@@ -172,6 +172,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch18/index.html",
   },
+  {
+    n: 19,
+    title: { en: "Celestial Distances", ja: "天体までの距離" },
+    blurb: {
+      en: "Climb the cosmic distance ladder — radar ranging across the solar system, the geometry of stellar parallax and the parsec (d = 1/P), our nearest neighbors and ESA's Gaia, pulsating Cepheids and RR Lyrae as standard candles, Leavitt's period-luminosity law in the Small Magellanic Cloud, spectroscopic parallax, and how Shapley and Hubble measured the Galaxy and proved other galaxies exist.",
+      ja: "宇宙の距離はしごを登ろう——太陽系のレーダー測距、恒星視差の幾何学とパーセク（d = 1/P）、最も近い隣人たちとESAのガイア、標準光源としての脈動ケフェイドとRRライリ、小マゼラン雲でのリービットの周期光度法則、分光視差、そしてシャプレーとハッブルがどう銀河を測り、他の銀河の存在を証明したか。",
+    },
+    href: "chapters/ch19/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
