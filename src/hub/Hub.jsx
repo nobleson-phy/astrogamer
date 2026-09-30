@@ -181,6 +181,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch19/index.html",
   },
+  {
+    n: 20,
+    title: { en: "Between the Stars: Gas and Dust in Space", ja: "星の間：宇宙のガスと塵" },
+    blurb: {
+      en: "Explore the interstellar medium — 99% gas and 1% dust at about one atom per cm³, red H II emission nebulae and blue reflection nebulae, the 21-cm line mapping cold hydrogen, dust extinction and reddening, cold CO-traced molecular clouds and grain chemistry, million-degree gas from supernova shocks, cosmic rays and spallation, and the Local Bubble the Sun drifts through.",
+      ja: "星間物質を探ろう——約1原子/cm³で99%がガス・1%が塵、赤いH II輝線星雲と青い反射星雲、冷たい水素を地図化する21 cm線、塵の減光と赤化、COで追う冷たい分子雲と粒子の化学、超新星の衝撃波による100万度のガス、宇宙線と核破砕、そして太陽が漂うローカルバブル。",
+    },
+    href: "chapters/ch20/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
