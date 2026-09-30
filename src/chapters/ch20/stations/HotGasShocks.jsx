@@ -43,9 +43,10 @@ function draw(ctx, cw, H, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
   const cx = cw * 0.4, cy = H * 0.44;
+  const mcx = cw * 0.8, mcy = cy;        // molecular cloud position
   const cyc = tt % 260, p = cyc / 260;
-  // hot bubble carved by expanding shock
-  const shockR = 20 + p * Math.min(cw * 0.3, 150);
+  // hot bubble: shock expands far enough to reach and pass the cloud
+  const shockR = 20 + p * ((mcx - cx) + 40);
   const bg = ctx.createRadialGradient(cx, cy, 2, cx, cy, shockR);
   bg.addColorStop(0, "rgba(180,120,255,0.10)"); bg.addColorStop(0.8, "rgba(255,120,80,0.08)"); bg.addColorStop(1, "rgba(255,120,80,0)");
   ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(cx, cy, shockR, 0, Math.PI * 2); ctx.fill();
@@ -58,9 +59,9 @@ function draw(ctx, cw, H, tt, lang) {
   // temperature label inside bubble
   ctx.fillStyle = "rgba(255,160,120,0.9)"; ctx.font = `10px ${mono}`; ctx.fillText("10⁶ K", cx, cy - shockR * 0.4);
   // nearby molecular cloud on the right, compressed when shock reaches it
-  const mcx = cw * 0.8, mcy = cy;
-  const reached = shockR > (mcx - cx - 30);
-  const squeeze = reached ? Math.min((shockR - (mcx - cx - 30)) / 40, 1) : 0;
+  const edge = mcx - cx - 34;           // distance to the cloud's near edge
+  const reached = shockR > edge;
+  const squeeze = reached ? Math.min((shockR - edge) / 40, 1) : 0;
   ctx.fillStyle = "rgba(70,58,74,0.7)"; ctx.beginPath(); ctx.ellipse(mcx, mcy, 34 - squeeze * 12, 26, 0, 0, Math.PI * 2); ctx.fill();
   if (squeeze > 0.6) { // new star ignites
     const g = ctx.createRadialGradient(mcx, mcy, 1, mcx, mcy, 12); g.addColorStop(0, "#fff"); g.addColorStop(1, "rgba(255,220,150,0)");
