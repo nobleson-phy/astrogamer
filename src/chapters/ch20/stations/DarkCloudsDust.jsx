@@ -62,12 +62,12 @@ function drawExt(ctx, cw, H, dust, lang) {
   const sx = 36, sy = H * 0.42, ex = cw - 44;
   // true blue-white star at left
   ctx.fillStyle = "#cfe0ff"; ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "本来：青白い" : "true: blue-white", sx, sy + 24);
+  ctx.fillStyle = "#cfe0ff"; ctx.font = `11px ${mono}`; ctx.textAlign = "left"; ctx.fillText(lang === "ja" ? "本来：青白い" : "true: blue-white", 8, sy + 28);
   // dust cloud band in the middle
   const cx0 = cw * 0.34, cx1 = cw * 0.66;
   ctx.fillStyle = `rgba(120,90,70,${0.1 + dust * 0.5})`; ctx.fillRect(cx0, sy - 40, cx1 - cx0, 80);
   for (let i = 0; i < dust * 60; i++) { ctx.fillStyle = "rgba(90,70,55,0.5)"; ctx.beginPath(); ctx.arc(cx0 + Math.random() * (cx1 - cx0), sy - 40 + Math.random() * 80, 1.5, 0, Math.PI * 2); ctx.fill(); }
-  ctx.fillStyle = C.faint; ctx.fillText(lang === "ja" ? "塵の雲" : "dust cloud", (cx0 + cx1) / 2, sy - 46);
+  ctx.fillStyle = C.faint; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "塵の雲" : "dust cloud", (cx0 + cx1) / 2, sy - 46);
   // observed star at right: dimmer and redder with more dust
   const dim = 1 - dust * 0.7;
   const redness = dust; // 0 blue-white .. 1 red
@@ -76,8 +76,8 @@ function drawExt(ctx, cw, H, dust, lang) {
   const glow = ctx.createRadialGradient(ex, sy, 1, ex, sy, R + 8); glow.addColorStop(0, `rgba(${r},${g},${b},${0.4 + dim * 0.5})`); glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(ex, sy, R + 8, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.beginPath(); ctx.arc(ex, sy, R, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = C.text; ctx.font = `9px ${mono}`; ctx.fillText(lang === "ja" ? "観測：暗く赤い" : "observed: dim & red", ex, sy + 26);
-  ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.fillText(lang === "ja" ? "減光＋赤化" : "extinction + reddening", cw / 2, H - 10);
+  ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.font = `11px ${mono}`; ctx.textAlign = "right"; ctx.fillText(lang === "ja" ? "観測：暗く赤い" : "observed: dim & red", cw - 8, sy + 28);
+  ctx.fillStyle = C.sun; ctx.font = `11px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "減光＋赤化" : "extinction + reddening", cw / 2, H - 10);
 }
 
 function drawGrain(ctx, cw, H, lang) {
