@@ -190,6 +190,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch20/index.html",
   },
+  {
+    n: 21,
+    title: { en: "The Birth of Stars and Exoplanets", ja: "星の誕生と系外惑星" },
+    blurb: {
+      en: "Watch stars form and worlds appear around them — giant molecular clouds and shock-triggered collapse, contracting protostars and their H–R tracks, Herbig-Haro jets and T Tauri disks, exoplanet hunting by Doppler wobble and transit, 51 Pegasi b and Kepler, surprising migrating hot Jupiters, super-Earths and ancient compact systems, and the habitable zone.",
+      ja: "星が形成され、その周りに世界が現れる様子を見よう——巨大分子雲と衝撃波による収縮、収縮する原始星とそのH–R経路、ハービッグ・ハロージェットとTタウリ円盤、ドップラーの揺れとトランジットによる系外惑星探し、ペガスス座51番星bとケプラー、驚きの移動するホットジュピター、スーパーアースと古代の密集系、そしてハビタブルゾーン。",
+    },
+    href: "chapters/ch21/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
