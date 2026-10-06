@@ -199,6 +199,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch21/index.html",
   },
+  {
+    n: 22,
+    title: { en: "Stars from Adolescence to Old Age", ja: "星の成年期から老年期へ" },
+    blurb: {
+      en: "Follow a star from the main sequence to its grave — the zero-age main sequence and the T⁴ grip of temperature on fusion, how mass sets a whole lifespan, the swell to a red giant, the triple-alpha fire and helium flash, globular and open clusters, the turnoff that clocks their age, and two deaths: a gentle planetary nebula and an iron-cored collapse that makes us stardust.",
+      ja: "星を主系列から墓場まで追おう——零年主系列と融合を握る温度のT⁴則、質量が一生を決めるしくみ、赤色巨星への膨張、トリプルアルファの炎とヘリウムフラッシュ、球状星団と散開星団、その年齢を刻む転回点、そして2つの死：穏やかな惑星状星雲と、私たちを星の塵にする鉄の核の崩壊。",
+    },
+    href: "chapters/ch22/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
