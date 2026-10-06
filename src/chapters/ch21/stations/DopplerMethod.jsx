@@ -60,10 +60,13 @@ function draw(ctx, cw, H, pm, dist, tt, lang) {
   const px = cx - Math.cos(a) * pr, py = cy - Math.sin(a) * pr * 0.5;
   // barycenter
   ctx.fillStyle = "rgba(255,207,107,0.5)"; ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
-  // star (color-shifted by radial velocity = sin of phase)
-  const vr = Math.sin(a); // >0 moving away (red), <0 toward (blue)
-  const sc = vr < -0.2 ? "#9bb4ff" : vr > 0.2 ? "#ff9a9a" : "#ffe08a";
-  ctx.fillStyle = sc; ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI * 2); ctx.fill();
+  // star color shifts smoothly with radial velocity (blue toward, red away)
+  const vr = Math.sin(a); // -1 toward us, +1 away
+  const lerp = (p, q, f) => [Math.round(p[0] + (q[0] - p[0]) * f), Math.round(p[1] + (q[1] - p[1]) * f), Math.round(p[2] + (q[2] - p[2]) * f)];
+  const blue = [143, 184, 255], yel = [255, 224, 138], red = [255, 143, 143];
+  const t2 = (vr + 1) / 2;
+  const col = t2 < 0.5 ? lerp(blue, yel, t2 / 0.5) : lerp(yel, red, (t2 - 0.5) / 0.5);
+  ctx.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI * 2); ctx.fill();
   // planet
   ctx.fillStyle = "#8fc0e8"; ctx.beginPath(); ctx.arc(px, py, 4 + pm, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.wobble, cx, cy + 40);

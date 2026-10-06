@@ -53,27 +53,33 @@ const STR = {
 function drawMig(ctx, cw, H, tt, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const sx = 46, sy = H / 2;
-  // star
-  const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24); g.addColorStop(0, "#fff2c0"); g.addColorStop(1, "rgba(255,180,60,0)");
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI * 2); ctx.fill();
-  // ice line
-  const iceX = cw * 0.6;
-  ctx.strokeStyle = "rgba(150,200,255,0.5)"; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(iceX, 20); ctx.lineTo(iceX, H - 30); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = "#8fbfff"; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.iceline, iceX, 14);
-  // giant forms far out then migrates in
-  const cyc = tt % 320, p = cyc / 320;
-  const startX = cw * 0.82, endX = sx + 46;
-  const gx = startX - Math.min(p / 0.8, 1) * (startX - endX);
-  const jg = ctx.createRadialGradient(gx - 3, sy - 3, 1, gx, sy, 12); jg.addColorStop(0, "#f0c98a"); jg.addColorStop(1, "#b06a2a");
-  ctx.fillStyle = jg; ctx.beginPath(); ctx.arc(gx, sy, 11, 0, Math.PI * 2); ctx.fill();
-  // migration arrow
-  ctx.strokeStyle = "rgba(255,207,107,0.6)"; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(startX, sy + 24); ctx.lineTo(endX + 10, sy + 24); ctx.stroke(); ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(endX + 10, sy + 24); ctx.lineTo(endX + 18, sy + 20); ctx.lineTo(endX + 18, sy + 28); ctx.closePath(); ctx.fillStyle = "rgba(255,207,107,0.9)"; ctx.fill();
-  ctx.fillStyle = C.cool; ctx.font = `9px ${mono}`; ctx.textAlign = "center";
-  ctx.fillText(t.forms, startX, sy - 18); ctx.fillText(t.migrates, (startX + endX) / 2, sy - 8);
-  ctx.fillStyle = "#e0774f"; ctx.fillText(t.hot, endX, sy + 42);
+  const cx = cw / 2, cy = H / 2;
+  const yS = 0.5;
+  // star at center
+  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 22); g.addColorStop(0, "#fff2c0"); g.addColorStop(1, "rgba(255,180,60,0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffd86b"; ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
+  const rStart = Math.min(cw * 0.42, 190), rEnd = 36;
+  // ice line (dashed circle) — giant forms beyond it
+  const iceR = rStart * 0.72;
+  ctx.strokeStyle = "rgba(150,200,255,0.5)"; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.ellipse(cx, cy, iceR, iceR * yS, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = "#8fbfff"; ctx.font = `9px ${mono}`; ctx.textAlign = "center"; ctx.fillText(t.iceline, cx, cy - iceR * yS - 6);
+  // spiral migration: radius shrinks while angle advances
+  const cyc = tt % 400, p = cyc / 400;
+  // faint spiral trail
+  ctx.strokeStyle = "rgba(255,207,107,0.25)"; ctx.lineWidth = 1; ctx.beginPath();
+  for (let s = 0; s <= p; s += 0.01) { const r = rStart - s * (rStart - rEnd); const a = s * Math.PI * 7; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * yS; if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+  ctx.stroke();
+  // giant's current position on the spiral
+  const r = rStart - p * (rStart - rEnd); const a = p * Math.PI * 7;
+  const gx = cx + Math.cos(a) * r, gy = cy + Math.sin(a) * r * yS;
+  const jg = ctx.createRadialGradient(gx - 3, gy - 3, 1, gx, gy, 12); jg.addColorStop(0, "#f0c98a"); jg.addColorStop(1, "#b06a2a");
+  ctx.fillStyle = jg; ctx.beginPath(); ctx.arc(gx, gy, 10, 0, Math.PI * 2); ctx.fill();
+  // labels
+  ctx.fillStyle = C.cool; ctx.font = `10px ${mono}`; ctx.textAlign = "center";
+  const phase = p < 0.3 ? t.forms : p < 0.85 ? t.migrates : t.hot;
+  ctx.fillStyle = p >= 0.85 ? "#e0774f" : C.cool;
+  ctx.fillText(phase, cx, H - 10);
 }
 
 function drawImg(ctx, cw, H, lang) {

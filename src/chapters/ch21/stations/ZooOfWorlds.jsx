@@ -52,23 +52,24 @@ const STR = {
 function drawTypes(ctx, cw, H, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const cy = H * 0.44;
+  const cy = H * 0.36;
   const planets = [
-    { r: 10, col: "#5b8fd8", label: t.earth, hl: false },
-    { r: 18, col: "#8fc0a0", label: t.superearth, hl: true },
-    { r: 26, col: "#6fb0d8", label: t.neptune, hl: false },
-    { r: 40, col: "#e0b878", label: t.jupiter, hl: false },
+    { r: 8, col: "#5b8fd8", name: lang === "ja" ? "地球" : "Earth", rv: "1 R⊕", hl: false },
+    { r: 14, col: "#8fc0a0", name: lang === "ja" ? "スーパーアース" : "super-Earth", rv: "1.4–2.8 R⊕", hl: true },
+    { r: 22, col: "#6fb0d8", name: lang === "ja" ? "ネプチューン" : "Neptune", rv: "~3.9 R⊕", hl: false },
+    { r: 32, col: "#e0b878", name: lang === "ja" ? "木星" : "Jupiter", rv: "~11 R⊕", hl: false },
   ];
-  let x = 50;
-  planets.forEach((p) => {
-    x += p.r + 14;
+  const xs = [cw * 0.17, cw * 0.40, cw * 0.63, cw * 0.86];
+  planets.forEach((p, i) => {
+    const x = xs[i];
     const g = ctx.createRadialGradient(x - p.r * 0.3, cy - p.r * 0.3, p.r * 0.2, x, cy, p.r); g.addColorStop(0, p.col); g.addColorStop(1, "rgba(0,0,0,0.4)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, p.r, 0, Math.PI * 2); ctx.fill();
-    if (p.hl) { ctx.strokeStyle = "#8fe0a0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, cy, p.r + 3, 0, Math.PI * 2); ctx.stroke(); }
-    ctx.fillStyle = p.hl ? "#8fe0a0" : C.muted; ctx.font = `${p.hl ? "700 " : ""}9px ${mono}`; ctx.textAlign = "center";
-    ctx.save(); ctx.translate(x, cy + p.r + 12); ctx.rotate(0.25); ctx.fillText(p.label, 0, 0); ctx.restore();
-    x += p.r + 14;
+    if (p.hl) { ctx.strokeStyle = "#8fe0a0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, cy, p.r + 4, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.textAlign = "center";
+    ctx.fillStyle = p.hl ? "#8fe0a0" : C.text; ctx.font = `${p.hl ? "700 " : ""}11px ${mono}`; ctx.fillText(p.name, x, cy + 44 + 14);
+    ctx.fillStyle = p.hl ? "#8fe0a0" : C.faint; ctx.font = `10px ${mono}`; ctx.fillText(p.rv, x, cy + 44 + 28);
   });
+  ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillText(lang === "ja" ? "★ スーパーアース：太陽系にない" : "★ super-Earth: not in our solar system", cw / 2, 18);
 }
 
 function drawCompact(ctx, cw, H, tt, lang) {

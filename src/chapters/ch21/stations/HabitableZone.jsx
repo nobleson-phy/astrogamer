@@ -28,6 +28,7 @@ const STR = {
     hz: "habitable zone (liquid water possible)", hot: "too hot", cold: "too cold", ok: "in the zone",
     thin: "thin (Earth-like)", thick: "thick CO₂ (runaway greenhouse)",
     temperate: "temperate — water can be liquid", inferno: "runaway greenhouse → inferno (like Venus)",
+    surfT: "surface", eqT: "no-air baseline",
     note: "The habitable zone is the distance band where liquid water is possible — but a planet's atmosphere and greenhouse decide its real temperature. Venus, in the zone, is an inferno.",
   },
   ja: {
@@ -42,6 +43,7 @@ const STR = {
     hz: "ハビタブルゾーン（液体の水が可能）", hot: "熱すぎる", cold: "冷たすぎる", ok: "ゾーン内",
     thin: "薄い（地球型）", thick: "厚いCO₂（暴走温室効果）",
     temperate: "温暖——水が液体でいられる", inferno: "暴走温室効果 → 灼熱（金星のよう）",
+    surfT: "表面", eqT: "大気なしの基準",
     note: "ハビタブルゾーンは液体の水が可能な距離の帯——でも惑星の大気と温室効果が実際の温度を決めます。ゾーン内の金星は灼熱です。",
   },
 };
@@ -49,7 +51,7 @@ const STR = {
 function draw(ctx, cw, H, d, thick, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const sx = 40, sy = H * 0.44;
+  const sx = 40, sy = H * 0.52;
   // star
   const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 26); g.addColorStop(0, "#fff2c0"); g.addColorStop(1, "rgba(255,180,60,0)");
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
@@ -68,6 +70,17 @@ function draw(ctx, cw, H, d, thick, lang) {
   const pc = (inHZ && !thick) ? "#5b8fd8" : (inHZ && thick) ? "#e0b06a" : d < 0.9 ? "#e0774f" : "#8fb8e8";
   ctx.fillStyle = pc; ctx.beginPath(); ctx.arc(px, sy, 9, 0, Math.PI * 2); ctx.fill();
   if (thick) { ctx.strokeStyle = "rgba(255,180,100,0.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, sy, 13, 0, Math.PI * 2); ctx.stroke(); }
+  // temperatures: equilibrium (no atmosphere) ~ 278/sqrt(d) K; greenhouse adds warmth
+  const teqK = 278 / Math.sqrt(d);
+  const ghK = thick ? 500 : 33; // thin ≈ Earth's +33 K; thick CO₂ ≈ Venus-like runaway
+  const tsurfK = teqK + ghK;
+  const toC = (k) => Math.round(k - 273);
+  // temperature readout (fixed top band, won't collide with the planet)
+  ctx.textAlign = "center";
+  ctx.fillStyle = thick ? "#e0774f" : C.text; ctx.font = `700 13px ${mono}`;
+  ctx.fillText(`${t.surfT} ≈ ${toC(tsurfK)} °C  (${Math.round(tsurfK)} K)`, cw / 2, 18);
+  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`;
+  ctx.fillText(`${t.eqT} ≈ ${toC(teqK)} °C`, cw / 2, 32);
   // status
   let status, col;
   if (!inHZ) { status = d < 0.9 ? t.hot : t.cold; col = C.bad; }
@@ -80,7 +93,7 @@ export function HabitableZone() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 230;
+  const H = 250;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [d, setD] = useState(1.1);

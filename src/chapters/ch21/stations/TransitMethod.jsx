@@ -59,11 +59,15 @@ function draw(ctx, cw, H, rp, tt, lang) {
   // light curve
   const gx0 = cw * 0.52, gx1 = cw - 16, gy = H * 0.72, gh = 40;
   ctx.strokeStyle = "rgba(150,175,230,0.3)"; ctx.beginPath(); ctx.moveTo(gx0, gy - gh); ctx.lineTo(gx0, gy); ctx.lineTo(gx1, gy); ctx.stroke();
-  const depth = rp * rp; // fraction blocked
+  const depth = rp * rp; // actual fraction blocked
+  // exaggerate the plotted dip so even small transits are clearly visible (axis is not to absolute scale)
+  const dipPix = Math.min(0.18 + depth * 5, 0.9) * gh;
   ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 2; ctx.beginPath();
-  for (let x = 0; x <= 100; x++) { const ph = x / 100; const inT = ph > 0.25 && ph < 0.75; const y = gy - gh + (inT ? depth * gh : 0); const xx = gx0 + ph * (gx1 - gx0); if (x === 0) ctx.moveTo(xx, y); else ctx.lineTo(xx, y); }
+  for (let x = 0; x <= 100; x++) { const ph = x / 100; const inT = ph > 0.25 && ph < 0.75; const y = gy - gh + (inT ? dipPix : 0); const xx = gx0 + ph * (gx1 - gx0); if (x === 0) ctx.moveTo(xx, y); else ctx.lineTo(xx, y); }
   ctx.stroke();
-  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "left"; ctx.fillText(lang === "ja" ? "明るさ" : "brightness", gx0, gy - gh - 6);
+  // dashed baseline (100% brightness) for reference
+  ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(gx0, gy - gh); ctx.lineTo(gx1, gy - gh); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = C.faint; ctx.font = `9px ${mono}`; ctx.textAlign = "left"; ctx.fillText(lang === "ja" ? "明るさ（誇張）" : "brightness (exaggerated)", gx0, gy - gh - 6);
   // readouts
   ctx.fillStyle = C.text; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
   ctx.fillText(`${t.depth} = (${rp.toFixed(2)})² = ${(depth * 100).toFixed(1)}%`, cw / 2, H - 26);
