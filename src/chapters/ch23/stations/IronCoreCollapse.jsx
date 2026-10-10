@@ -66,8 +66,9 @@ function draw(ctx, cw, H, p, lang) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw * 0.5, cy = H * 0.34;
   const collapse = clamp(p / 0.3, 0, 1);
-  // debris glow begins at p=0.38 — the halfway point of the light-curve ramp (0.3→0.46 peak)
-  const burst = p >= 0.3 && p < 0.38;
+  // Crossfade at the ramp midpoint (p=0.38): neutrino rays reach the peak (0.46) but
+  // fade from 0.38, while the debris glow fades in from 0.38.
+  const burst = p >= 0.3 && p < 0.46;
   const glow = p >= 0.38;
 
   // core shrinking during collapse
@@ -80,13 +81,14 @@ function draw(ctx, cw, H, p, lang) {
     if (coreR > 10) ctx.fillText("Fe", cx, cy + 3);
   }
 
-  // neutrino burst: dashed rays outward
+  // neutrino burst: dashed rays expand to the peak, fading out from the midpoint
   if (burst) {
-    const f = (p - 0.3) / 0.16;
-    ctx.strokeStyle = `rgba(99,211,240,${0.9 * (1 - f)})`; ctx.lineWidth = 1.4;
+    const nf = clamp((p - 0.3) / 0.16, 0, 1);     // rays reach full extent by p=0.46
+    const fade = clamp((0.46 - p) / 0.08, 0, 1);  // full until 0.38, then →0 by 0.46
+    ctx.strokeStyle = `rgba(99,211,240,${0.9 * fade})`; ctx.lineWidth = 1.4;
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
-      const r0 = 10 + f * 40, r1 = 10 + f * 140;
+      const r0 = 10 + nf * 40, r1 = 10 + nf * 140;
       ctx.setLineDash([3, 6]);
       ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
       ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); ctx.stroke();
@@ -98,9 +100,10 @@ function draw(ctx, cw, H, p, lang) {
   if (glow) {
     const f = (p - 0.38) / 0.62;    // 0..1, debris keeps expanding
     const b = brightness(p);        // 0..1, same curve the light plot uses
+    const fin = clamp((p - 0.38) / 0.08, 0, 1);  // debris fades in 0.38→0.46
     const R = 50 + f * 34;
     const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, R);
-    const a = clamp(0.12 + b * 0.75, 0.1, 0.9);
+    const a = clamp((0.12 + b * 0.75) * fin, 0, 0.9);
     g.addColorStop(0, `rgba(255,220,120,${a})`); g.addColorStop(0.6, `rgba(255,150,90,${a * 0.6})`); g.addColorStop(1, "rgba(255,110,67,0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
   }
