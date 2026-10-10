@@ -66,12 +66,13 @@ function draw(ctx, cw, H, p, lang) {
   ctx.clearRect(0, 0, cw, H);
   const cx = cw * 0.5, cy = H * 0.34;
   const collapse = clamp(p / 0.3, 0, 1);
-  const burst = p >= 0.3 && p < 0.46;
-  const glow = p >= 0.46;
+  // debris glow begins at p=0.38 — the halfway point of the light-curve ramp (0.3→0.46 peak)
+  const burst = p >= 0.3 && p < 0.38;
+  const glow = p >= 0.38;
 
   // core shrinking during collapse
   const coreR = p < 0.3 ? 42 - collapse * 32 : 8;
-  if (p < 0.46) {
+  if (p < 0.38) {
     const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, Math.max(coreR, 6));
     g.addColorStop(0, "#ffffff"); g.addColorStop(0.6, "#cfd6e0"); g.addColorStop(1, "#8b94a8");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, Math.max(coreR, 6), 0, Math.PI * 2); ctx.fill();
@@ -95,7 +96,7 @@ function draw(ctx, cw, H, p, lang) {
 
   // glowing fading debris — alpha driven by the shared brightness(p)
   if (glow) {
-    const f = (p - 0.46) / 0.54;    // 0..1, debris keeps expanding
+    const f = (p - 0.38) / 0.62;    // 0..1, debris keeps expanding
     const b = brightness(p);        // 0..1, same curve the light plot uses
     const R = 50 + f * 34;
     const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, R);
