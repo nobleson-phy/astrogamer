@@ -12,7 +12,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLang } from "../../../shared/i18n.jsx";
 import { C, mono, display, reduceMotion } from "../../../shared/theme.js";
-import { useMeasure, setupCanvas, clamp } from "../../../shared/helpers.js";
+import { useMeasure, setupCanvas, clamp, lerp } from "../../../shared/helpers.js";
 import { styles } from "../../../shared/styles.js";
 import { InfoPanel } from "../../../shared/ui.jsx";
 
@@ -25,7 +25,8 @@ const STR = {
     threadText: "When the core finally stops falling, what remains is almost unimaginable: a Sun crushed to the width of a city, a single colossal atomic nucleus.",
     key: "A CITY-SIZED NEUTRON STAR; WHY NEUTRONS HOLD MORE MASS",
     keyText: "If the collapse is stopped not by electrons but by NEUTRON DEGENERACY PRESSURE, the remnant is a NEUTRON STAR. Electrons and protons are crushed together into neutrons, and 1.4–3 M☉ is packed into a sphere only about 20 km across — the width of a city — at a density of roughly 10^14 g/cm³. Why can neutron degeneracy support more mass than electron degeneracy? A neutron is about 1,800× more massive than an electron. More massive particles have a much smaller quantum wavelength, so they can be squeezed into a far smaller volume before degeneracy pressure halts the collapse — which is why a neutron star reaches far higher densities and a higher mass limit (~3 M☉) than a white dwarf (1.4 M☉).",
-    ns: "neutron star ≈ 20 km", city: "a city",
+    ns: "neutron star ≈ 20 km", city: "a city (≈20 km)", nsPrefix: "neutron star",
+    diaLabel: "diameter", warn: "near the ~3 M☉ limit → collapses to a black hole",
     massLabel: "Neutron-star mass",
     whyTitle: "WHY NEUTRONS HOLD MORE MASS",
     eRow: "electron", nRow: "neutron (≈1,800× heavier)",
@@ -41,7 +42,8 @@ const STR = {
     threadText: "核がついに落下を止めたとき、残るものはほとんど想像を絶します：太陽が都市の幅に押しつぶされ、ひとつの巨大な原子核になっているのです。",
     key: "都市サイズの中性子星；なぜ中性子はより多くの質量を保てるのか",
     keyText: "崩壊が電子ではなく中性子縮退圧によって止められると、残骸は中性子星になります。電子と陽子は押しつぶされて中性子になり、1.4〜3 M☉が直径わずか約20 km——都市の幅——の球に、およそ10^14 g/cm³の密度で詰め込まれます。なぜ中性子縮退は電子縮退より多くの質量を支えられるのでしょう。中性子は電子より約1,800倍重いのです。重い粒子ほど量子波長がずっと小さいので、縮退圧が崩壊を止めるまでにはるかに小さな体積に押し込められます——だから中性子星は、白色矮星（1.4 M☉）よりはるかに高い密度とより高い質量限界（約3 M☉）に達するのです。",
-    ns: "中性子星 ≈ 20 km", city: "都市",
+    ns: "中性子星 ≈ 20 km", city: "都市（約20 km）", nsPrefix: "中性子星",
+    diaLabel: "直径", warn: "約3 M☉の限界に接近 → ブラックホールへ崩壊",
     massLabel: "中性子星の質量",
     whyTitle: "なぜ中性子はより多くの質量を保てるのか",
     eRow: "電子", nRow: "中性子（約1,800倍重い）",
@@ -54,28 +56,34 @@ const STR = {
 function draw(ctx, cw, H, M, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  // scale: 20 km neutron star drawn as a disc; a city skyline below at same scale
-  const nsR = 54;
-  const cx = cw * 0.3, cy = H * 0.40;
+  // Fixed spatial scale: a city skyline fixed at ~20 km; the neutron star is drawn
+  // to the SAME scale so its shrinking with mass is directly comparable.
+  const pxPerKm = 5.2;
+  const frac = clamp((M - 1.4) / (3.0 - 1.4), 0, 1);
+  const diaKm = lerp(24, 17, frac);             // more mass → smaller star
+  const nsR = (diaKm * pxPerKm) / 2;
+  const near = M > 2.8;                          // approaching the ~3 M☉ limit
+  const cx = cw * 0.3, cy = H * 0.42;
+  const rim = near ? "#d87a6a" : "#6f8fd8";
   // neutron star glow
   const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, nsR + 26);
-  glow.addColorStop(0, "rgba(180,210,255,0.6)"); glow.addColorStop(1, "rgba(180,210,255,0)");
+  glow.addColorStop(0, near ? "rgba(255,170,150,0.6)" : "rgba(180,210,255,0.6)"); glow.addColorStop(1, "rgba(180,210,255,0)");
   ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, nsR + 26, 0, Math.PI * 2); ctx.fill();
   const g = ctx.createRadialGradient(cx - nsR * 0.3, cy - nsR * 0.3, nsR * 0.1, cx, cy, nsR);
-  g.addColorStop(0, "#ffffff"); g.addColorStop(0.5, "#cfe0ff"); g.addColorStop(1, "#6f8fd8");
+  g.addColorStop(0, "#ffffff"); g.addColorStop(0.5, near ? "#ffd3c8" : "#cfe0ff"); g.addColorStop(1, rim);
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, nsR, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#e6efff"; ctx.font = `12px ${mono}`; ctx.textAlign = "center";
-  ctx.fillText(t.ns, cx, cy + nsR + 24);
+  ctx.fillText(`${t.nsPrefix} · ${t.diaLabel} ≈ ${diaKm.toFixed(0)} km`, cx, cy + nsR + 26);
 
-  // scale bar "20 km"
+  // scale bar matching the current diameter
   ctx.strokeStyle = C.faint; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx - nsR, cy - nsR - 14); ctx.lineTo(cx + nsR, cy - nsR - 14); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx - nsR, cy - nsR - 18); ctx.lineTo(cx - nsR, cy - nsR - 10); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(cx + nsR, cy - nsR - 18); ctx.lineTo(cx + nsR, cy - nsR - 10); ctx.stroke();
 
-  // city skyline (same width scale) on the right
-  const cityX = cw * 0.60, cityBase = cy + nsR;
-  const cityW = nsR * 2;
+  // city skyline — FIXED width (≈20 km reference) so the star visibly shrinks against it
+  const cityW = 20 * pxPerKm;
+  const cityX = cw - cityW - 24, cityBase = cy + nsR * 0 + 30;
   ctx.fillStyle = "rgba(160,185,235,0.5)";
   const bw = cityW / 7;
   const heights = [22, 38, 30, 52, 34, 44, 26];
@@ -88,10 +96,16 @@ function draw(ctx, cw, H, M, lang) {
   ctx.fillStyle = "#9fb6e6"; ctx.font = `12px ${mono}`; ctx.textAlign = "center";
   ctx.fillText(t.city, cityX + cityW / 2, cityBase + 22);
 
-  // readouts
-  ctx.fillStyle = C.text; ctx.font = `12px ${mono}`; ctx.textAlign = "left";
+  // readouts — density climbs steeply as mass rises and radius shrinks (ρ ∝ M/R³)
+  const densRel = (M / 1.4) / Math.pow(diaKm / 20, 3);   // relative, in units of ~10^14
+  ctx.fillStyle = C.text; ctx.font = `13px ${mono}`; ctx.textAlign = "left";
   ctx.fillText(`${M.toFixed(2)} M☉`, 16, 22);
-  ctx.fillStyle = C.cool; ctx.fillText(t.density, 16, 42);
+  ctx.fillStyle = C.cool; ctx.font = `11px ${mono}`;
+  ctx.fillText(`≈ ${(densRel * 4).toFixed(1)} ×10¹⁴ g/cm³`, 16, 42);
+  if (near) {
+    ctx.fillStyle = "#e0774f"; ctx.font = `11px ${mono}`; ctx.textAlign = "left";
+    ctx.fillText(`⚠ ${t.warn}`, 16, H - 12);
+  }
 }
 
 export function NeutronStar() {

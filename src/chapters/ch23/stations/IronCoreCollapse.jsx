@@ -48,6 +48,18 @@ const STR = {
   },
 };
 
+// Single source of truth for brightness vs. timeline p (0..1), shared by the
+// glowing-debris graphic AND the light curve so the two always stay in sync.
+// Stays dark through collapse (p<0.3) and the neutrino burst (0.3–0.46); once
+// the debris lights up (p>=0.46) it rises sharply, then fades on radioactive decay.
+function brightness(p) {
+  if (p < 0.46) return 0;
+  const g = (p - 0.46) / 0.54;                 // 0..1 across the glow phase
+  const rise = clamp(g / 0.05, 0, 1);          // sharp rise at explosion
+  const decay = Math.exp(-Math.max(g - 0.05, 0) * 2.6);
+  return rise * decay;                         // peaks just after onset, then fades
+}
+
 function draw(ctx, cw, H, p, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
@@ -80,12 +92,13 @@ function draw(ctx, cw, H, p, lang) {
     ctx.setLineDash([]);
   }
 
-  // glowing fading debris
+  // glowing fading debris — alpha driven by the shared brightness(p)
   if (glow) {
-    const f = (p - 0.46) / 0.54; // 0..1 fade
-    const R = 60 + f * 20;
+    const f = (p - 0.46) / 0.54;    // 0..1, debris keeps expanding
+    const b = brightness(p);        // 0..1, same curve the light plot uses
+    const R = 50 + f * 34;
     const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, R);
-    const a = clamp(0.8 - f * 0.65, 0.08, 0.8);
+    const a = clamp(0.12 + b * 0.75, 0.1, 0.9);
     g.addColorStop(0, `rgba(255,220,120,${a})`); g.addColorStop(0.6, `rgba(255,150,90,${a * 0.6})`); g.addColorStop(1, "rgba(255,110,67,0)");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
   }
@@ -104,22 +117,24 @@ function draw(ctx, cw, H, p, lang) {
   ctx.fillText(t.time, x1, y1 + 14);
   ctx.save(); ctx.translate(x0 - 36, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2);
   ctx.textAlign = "center"; ctx.fillText(t.lum, 0, 0); ctx.restore();
-  // curve: steep rise then slow exponential-ish decay
+  // curve plots brightness() across the SAME timeline p the animation runs on:
+  // dark during collapse/burst, a sharp rise when the debris lights up, slow decay.
   ctx.strokeStyle = C.sun; ctx.lineWidth = 2; ctx.beginPath();
-  const N = 80;
+  const N = 120;
   for (let i = 0; i <= N; i++) {
-    const s = i / N; // 0..1 across plot
-    let L;
-    if (s < 0.12) L = s / 0.12;
-    else L = Math.exp(-(s - 0.12) * 3.2);
+    const s = i / N;                 // s == timeline p
+    const L = brightness(s);
     const x = x0 + s * (x1 - x0), y = y1 - L * (y1 - y0);
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  // moving marker tracking p
+  // faint "explosion" guide line at the moment the debris lights up (p=0.46)
+  const ex = x0 + 0.46 * (x1 - x0);
+  ctx.strokeStyle = "rgba(255,207,107,0.25)"; ctx.setLineDash([2, 4]);
+  ctx.beginPath(); ctx.moveTo(ex, y0); ctx.lineTo(ex, y1); ctx.stroke(); ctx.setLineDash([]);
+  // moving marker tracking p — sits exactly on the curve (same brightness())
   const ms = clamp(p, 0, 1);
-  let mL = ms < 0.12 ? ms / 0.12 : Math.exp(-(ms - 0.12) * 3.2);
-  const mx = x0 + ms * (x1 - x0), my = y1 - mL * (y1 - y0);
+  const mx = x0 + ms * (x1 - x0), my = y1 - brightness(ms) * (y1 - y0);
   ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(mx, my, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "left";
   ctx.fillText(t.decay, x0 + 8, y0 + 12);

@@ -32,6 +32,9 @@ const STR = {
     longDesc: "a massive star collapses in a star-forming region → jets",
     gw: "GW170817 (2017): gravitational waves + short GRB = NS merger",
     rprocess: "r-process: builds gold, platinum, uranium → seeds planets & life",
+    explainTitle: "WHAT YOU'RE SEEING",
+    shortExplain: "Two neutron stars spiral together for aeons, then merge in milliseconds — so the gamma-ray burst is SHORT. Their debris, flung out at a fraction of light speed, glows as a KILONOVA, where rapid neutron capture forges gold and platinum.",
+    longExplain: "A HYPERNOVA is an extreme supernova — releasing 10–100× the energy of an ordinary one — when a very massive star (roughly 25–40 M☉ or more) runs out of fuel. Instead of leaving a neutron star, its core collapses straight into a BLACK HOLE. Infalling gas forms a whirling disk that launches twin relativistic jets along the spin axis; a jet drilling out through the star and aimed near Earth is seen as a LONG gamma-ray burst. Because such giants live only a few million years, they detonate right beside the gas clouds that made them — which is why long GRBs light up active star-forming regions.",
     note: "Short GRBs (<2 s) are compact-object mergers; long GRBs (>2 s) are massive collapsars in star-forming regions. GW170817 confirmed NS mergers make short GRBs and forge gold/platinum in a kilonova. The r-process scatters elements heavier than iron into space.",
   },
   ja: {
@@ -48,6 +51,9 @@ const STR = {
     longDesc: "大質量星が星形成領域で崩壊 → ジェット",
     gw: "GW170817（2017）：重力波＋短いGRB＝中性子星の合体",
     rprocess: "r過程：金・プラチナ・ウランを作る → 惑星と生命を育てる",
+    explainTitle: "いま見えているもの",
+    shortExplain: "2つの中性子星が永い時間をかけて渦を巻き、最後はミリ秒で合体します——だからガンマ線バーストは短いのです。光速の数分の一で放り出された破片はキロノヴァとして輝き、そこで急速な中性子捕獲が金やプラチナを作ります。",
+    longExplain: "ハイパーノヴァは極端な超新星で——通常の10〜100倍のエネルギーを放ちます——非常に重い星（およそ25〜40 M☉以上）が燃料を使い果たしたときに起こります。中性子星を残す代わりに、その核はそのままブラックホールへ崩壊します。落ち込むガスが渦巻く円盤を作り、自転軸に沿って2本の相対論的ジェットを打ち上げます。星を貫いて噴き出し、地球の近くに向いたジェットが、長いガンマ線バーストとして見えます。そうした巨星はわずか数百万年しか生きないので、自分を作ったガス雲のすぐそばで爆発します——だから長いGRBは活発な星形成領域で光るのです。",
     note: "短いGRB（2秒未満）はコンパクト天体の合体、長いGRB（2秒以上）は星形成領域の大質量コラプサー。GW170817は中性子星合体が短いGRBを作り、キロノヴァで金／プラチナを作ることを裏づけました。r過程は鉄より重い元素を宇宙にまき散らします。",
   },
 };
@@ -179,7 +185,14 @@ export function CosmicAlchemyGRB() {
           <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
         </div>
 
-        <div style={{ fontFamily: mono, fontSize: 11.5, color: C.cool, marginTop: 8 }}>{t.gw}</div>
+        <div style={{ marginTop: 12, padding: 12, background: "rgba(8,12,26,0.6)", border: `1px solid ${C.border}`, borderRadius: 10 }}>
+          <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: 1.5, color: C.muted, marginBottom: 8 }}>
+            {t.explainTitle} — {mode === "short" ? t.shortTitle : t.longTitle}
+          </div>
+          <p style={{ ...styles.keyTermText, margin: 0 }}>{mode === "short" ? t.shortExplain : t.longExplain}</p>
+        </div>
+
+        <div style={{ fontFamily: mono, fontSize: 11.5, color: C.cool, marginTop: 10 }}>{t.gw}</div>
         <div style={{ fontFamily: mono, fontSize: 11.5, color: C.sun, marginTop: 4 }}>{t.rprocess}</div>
         <p style={{ ...styles.note, maxWidth: "none" }}>{t.note}</p>
       </div>
