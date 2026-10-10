@@ -208,6 +208,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch22/index.html",
   },
+  {
+    n: 23,
+    title: { en: "The Death of Stars", ja: "星の死" },
+    blurb: {
+      en: "See how stars end — white dwarfs held up by electron degeneracy, the 1.4 M☉ Chandrasekhar limit that detonates a Type Ia, iron-core collapse and its neutrino flood, city-sized neutron stars and spinning pulsars, the mass fork to a black hole, and the mergers and gamma-ray bursts that forge the gold in your blood.",
+      ja: "星がどう終わるかを見よう——電子縮退で支えられる白色矮星、Ia型を爆発させる1.4 M☉のチャンドラセカール限界、鉄の核の崩壊とニュートリノの洪水、都市ほどの中性子星と回転するパルサー、ブラックホールへの質量の分岐、そして血の中の金を作る合体とガンマ線バースト。",
+    },
+    href: "chapters/ch23/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
