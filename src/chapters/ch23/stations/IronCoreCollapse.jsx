@@ -50,14 +50,15 @@ const STR = {
 
 // Single source of truth for brightness vs. timeline p (0..1), shared by the
 // glowing-debris graphic AND the light curve so the two always stay in sync.
-// Stays dark through collapse (p<0.3) and the neutrino burst (0.3–0.46); once
-// the debris lights up (p>=0.46) it rises sharply, then fades on radioactive decay.
+// Dark only during the pre-explosion collapse (p<0.3); the moment the explosion /
+// neutrino flood begins (p=0.3) the light rises, peaks as the debris lights up
+// (~p=0.46), then fades for months on radioactive decay.
 function brightness(p) {
-  if (p < 0.46) return 0;
-  const g = (p - 0.46) / 0.54;                 // 0..1 across the glow phase
-  const rise = clamp(g / 0.05, 0, 1);          // sharp rise at explosion
-  const decay = Math.exp(-Math.max(g - 0.05, 0) * 2.6);
-  return rise * decay;                         // peaks just after onset, then fades
+  if (p < 0.3) return 0;                        // collapse: not yet luminous
+  const g = (p - 0.3) / 0.7;                    // 0..1 from the explosion onward
+  const rise = clamp(g / 0.22, 0, 1);           // climbs through the flood to peak
+  const decay = Math.exp(-Math.max(g - 0.22, 0) * 3.0);
+  return rise * decay;                          // peaks ~p=0.45, then slow decline
 }
 
 function draw(ctx, cw, H, p, lang) {
@@ -128,8 +129,8 @@ function draw(ctx, cw, H, p, lang) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  // faint "explosion" guide line at the moment the debris lights up (p=0.46)
-  const ex = x0 + 0.46 * (x1 - x0);
+  // faint "explosion" guide line at the moment the flood/explosion begins (p=0.3)
+  const ex = x0 + 0.3 * (x1 - x0);
   ctx.strokeStyle = "rgba(255,207,107,0.25)"; ctx.setLineDash([2, 4]);
   ctx.beginPath(); ctx.moveTo(ex, y0); ctx.lineTo(ex, y1); ctx.stroke(); ctx.setLineDash([]);
   // moving marker tracking p — sits exactly on the curve (same brightness())
