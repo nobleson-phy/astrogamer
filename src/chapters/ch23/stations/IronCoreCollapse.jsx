@@ -160,7 +160,7 @@ export function IronCoreCollapse() {
     let raf;
     const loop = () => {
       if (playRef.current) {
-        pRef.current += 0.0045;
+        pRef.current += 0.003375; // 75% of the original 0.0045 speed
         if (pRef.current > 1) pRef.current = 1;
       }
       draw(ctx, cw, H, pRef.current, lang);
