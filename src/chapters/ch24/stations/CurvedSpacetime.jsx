@@ -160,7 +160,7 @@ function draw(ctx, cw, H, M, lang) {
   ctx.fillText(t.sunLabel, clamp(sxS, 80, cw - 80), syS + sunR + 18 > H - 6 ? syS - sunR - 10 : syS + sunR + 18);
   ctx.fillStyle = "#dbe4ff"; ctx.textAlign = "left"; ctx.fillText(t.observer, O[0] + 8, O[1] - 2);
   ctx.fillStyle = C.text; ctx.textAlign = "right"; ctx.font = `12px ${mono}`;
-  ctx.fillText(`${t.mass}: ${(0.1 + M * 9.9).toFixed(1)}×`, cw - 10, 16);
+  ctx.fillText(`${t.mass}: ${(1 + M * 9).toFixed(1)}×`, cw - 10, 16);
 }
 
 export function CurvedSpacetime() {
@@ -202,7 +202,7 @@ export function CurvedSpacetime() {
           <span style={{ fontFamily: mono, fontSize: 12, color: C.cool, whiteSpace: "nowrap" }}>{t.mass}</span>
           <input type="range" min="0" max="1" step="0.01" value={M}
             onChange={(e) => setM(parseFloat(e.target.value))} style={{ flex: 1, accentColor: C.sun }} />
-          <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, width: 52, textAlign: "right" }}>{(0.1 + M * 9.9).toFixed(1)}×</span>
+          <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, width: 52, textAlign: "right" }}>{(1 + M * 9).toFixed(1)}×</span>
         </div>
 
         <canvas ref={canRef} style={{ display: "block", maxWidth: "100%", borderRadius: 12, background: "rgba(3,5,12,0.6)" }} />
