@@ -63,36 +63,42 @@ function draw(ctx, cw, H, big, tt, lang) {
   ctx.fillStyle = C.sun; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
   ctx.fillText(t.horizonL, cx, cy + r + 16 > H - 8 ? cy - r - 10 : cy + r + 16);
 
-  // astronaut falling in from the right
+  // astronaut falling in FEET-FIRST toward the hole (the hole is to the LEFT, so the
+  // feet — closest to the hole — point left, and the stretch is along the fall axis).
   const figX = big ? cw * 0.74 : cw * 0.72;
   const figCy = cy;
   // stretch factor: small hole = extreme stretch; giant = normal
   const stretch = big ? 1.0 : lerp(1.0, 3.6, clamp((tt % 240) / 240, 0, 1));
-  const headLen = 20 * stretch, legLen = 20 * stretch;
+  const headLen = 20 * stretch, legLen = 20 * stretch;   // extents along the horizontal fall axis
   const col = big ? "#dbe4ff" : (stretch > 2 ? C.danger : "#dbe4ff");
+  const xFeet = figX - legLen;   // toward the hole (left)
+  const xHead = figX + headLen;  // away from the hole (right)
 
   ctx.strokeStyle = col; ctx.lineWidth = 2.4; ctx.lineCap = "round";
-  // head
-  ctx.beginPath(); ctx.arc(figX, figCy - headLen, 6, 0, Math.PI * 2); ctx.stroke();
-  // body (stretched)
-  ctx.beginPath(); ctx.moveTo(figX, figCy - headLen + 6); ctx.lineTo(figX, figCy + legLen - 6); ctx.stroke();
-  // arms
-  ctx.beginPath(); ctx.moveTo(figX, figCy - headLen * 0.3); ctx.lineTo(figX - 10, figCy); ctx.moveTo(figX, figCy - headLen * 0.3); ctx.lineTo(figX + 10, figCy); ctx.stroke();
-  // legs (point toward hole)
-  ctx.beginPath(); ctx.moveTo(figX, figCy + legLen - 6); ctx.lineTo(figX - 7, figCy + legLen + 6); ctx.moveTo(figX, figCy + legLen - 6); ctx.lineTo(figX + 7, figCy + legLen + 6); ctx.stroke();
+  // head (far side, away from the hole)
+  ctx.beginPath(); ctx.arc(xHead + 6, figCy, 6, 0, Math.PI * 2); ctx.stroke();
+  // body (stretched along the fall axis)
+  ctx.beginPath(); ctx.moveTo(xHead, figCy); ctx.lineTo(xFeet, figCy); ctx.stroke();
+  // arms (perpendicular, up near the shoulders/head end)
+  const xSh = xHead - headLen * 0.3;
+  ctx.beginPath(); ctx.moveTo(xSh, figCy); ctx.lineTo(xSh, figCy - 10); ctx.moveTo(xSh, figCy); ctx.lineTo(xSh, figCy + 10); ctx.stroke();
+  // legs split, pointing toward the hole (left)
+  ctx.beginPath(); ctx.moveTo(xFeet, figCy); ctx.lineTo(xFeet - 8, figCy - 6); ctx.moveTo(xFeet, figCy); ctx.lineTo(xFeet - 8, figCy + 6); ctx.stroke();
 
-  // feet/head force arrows showing the gradient
-  ctx.font = `10px ${mono}`; ctx.textAlign = "center";
-  ctx.fillStyle = C.faint;
-  ctx.fillText(t.head, figX + 24, figCy - headLen);
-  ctx.fillText(t.feet, figX + 24, figCy + legLen);
-  // arrow lengths proportional to gradient difference
+  // head/feet labels
+  ctx.font = `10px ${mono}`; ctx.textAlign = "center"; ctx.fillStyle = C.faint;
+  ctx.fillText(t.head, xHead + 6, figCy - 16);
+  ctx.fillText(t.feet, xFeet - 4, figCy - 16);
+  // gradient force arrows pointing toward the hole (left); feet pulled much harder on a small hole
   const fHead = big ? 10 : 8;
-  const fFeet = big ? 12 : 30;  // feet pulled much harder for small hole
-  ctx.strokeStyle = C.cool; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(figX + 40, figCy - headLen); ctx.lineTo(figX + 40 - fHead, figCy - headLen); ctx.stroke();
-  ctx.strokeStyle = big ? C.cool : C.danger;
-  ctx.beginPath(); ctx.moveTo(figX + 40, figCy + legLen); ctx.lineTo(figX + 40 - fFeet, figCy + legLen); ctx.stroke();
+  const fFeet = big ? 12 : 30;
+  const arrowL = (x, y, len, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - len, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - len, y); ctx.lineTo(x - len + 5, y - 3); ctx.moveTo(x - len, y); ctx.lineTo(x - len + 5, y + 3); ctx.stroke();
+  };
+  arrowL(xHead, figCy + 24, fHead, C.cool);
+  arrowL(xFeet, figCy + 24, fFeet, big ? C.cool : C.danger);
 
   // verdict caption
   ctx.fillStyle = big ? C.good : C.danger; ctx.font = `12px ${mono}`; ctx.textAlign = "center";
