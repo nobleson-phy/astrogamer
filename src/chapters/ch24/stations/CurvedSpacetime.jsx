@@ -25,6 +25,7 @@ const STR = {
     keyText: "Newton described gravity as an attractive force acting instantly across empty space. General relativity replaces that picture entirely: MASS and ENERGY curve the four-dimensional fabric of SPACETIME, and everything — planets, moons, even light — simply follows the straightest available path through that curved geometry. Because light itself must follow the curve, a ray grazing the Sun is bent. Arthur EDDINGTON confirmed this in the 1919 solar eclipse, measuring stars near the Sun's edge shifted from their true positions. The same curvature makes the point of MERCURY's closest approach advance an extra 43 arcseconds per century — a leftover Newton could never explain.",
     mass: "Central mass",
     light: "starlight ray", star: "mass",
+    noMass: "path without mass", dev: "deflection",
     eddington: "Eddington 1919: starlight bent at the Sun's edge",
     mercury: "Mercury perihelion: +43″ / century beyond Newton",
     note: "Mass curves spacetime; objects and light follow geodesics through it. Light bending near the Sun (Eddington, 1919) and Mercury's extra 43″/century perihelion advance are two classic confirmations — gravity is geometry, not a force.",
@@ -39,6 +40,7 @@ const STR = {
     keyText: "ニュートンは重力を、空っぽの空間を越えて瞬時に働く引力として記述しました。一般相対論はその描像をすっかり置き換えます：質量とエネルギーが4次元の時空の生地を曲げ、惑星も衛星も、光さえも、ただその曲がった幾何学の中で最もまっすぐな経路をたどるのです。光自身も曲率に沿わねばならないので、太陽をかすめる光線は曲げられます。アーサー・エディントンは1919年の皆既日食でこれを確かめ、太陽の縁の近くの星が本当の位置からずれているのを測定しました。同じ曲率が、水星の最接近点を1世紀あたり43秒角だけ余分に進ませます——ニュートンには決して説明できなかった残り分です。",
     mass: "中心の質量",
     light: "星の光の光線", star: "質量",
+    noMass: "質量がない場合の経路", dev: "偏向",
     eddington: "エディントン1919：太陽の縁で曲がる星の光",
     mercury: "水星の近日点：ニュートンを超えて +43″／世紀",
     note: "質量は時空を曲げ、物体と光はその中の測地線をたどります。太陽の近くで曲がる光（エディントン、1919年）と、水星の余分な43″／世紀の近日点移動は2つの古典的な確認です——重力は力ではなく幾何学です。",
@@ -48,10 +50,13 @@ const STR = {
 function draw(ctx, cw, H, M, lang) {
   const t = STR[lang];
   ctx.clearRect(0, 0, cw, H);
-  const cx = cw * 0.5, cy = H * 0.56;
+  const cx = cw * 0.5, cy = H * 0.5;
   const depth = lerp(10, 120, M);          // well depth grows with mass
   const wellR = lerp(70, 150, M);           // influence radius
   const massR = lerp(7, 20, M);
+  // the grid sags downward by `depth*0.55` at the center, so the mass sits at the
+  // very bottom of the well — curvature is deepest exactly at the mass.
+  const starCy = cy + depth * 0.55;
 
   // spacetime grid with a dip: displace each grid point toward the center
   const warp = (x, y) => {
@@ -82,21 +87,27 @@ function draw(ctx, cw, H, M, lang) {
     ctx.stroke();
   }
 
-  // light ray entering from the left at an impact parameter above center
-  const b = 46;                              // impact parameter (px above center)
-  const rayY0 = cy - b;
+  // light ray entering from the left, grazing above the mass
+  const b = 70;                              // impact parameter (px above the mass)
+  const rayY0 = starCy - b;                  // the undeflected straight-line height
+  // total DOWNWARD deflection toward the mass: exactly 0 with no mass, growing with
+  // mass and stronger for a closer graze. It is PERMANENT — the ray exits at a new
+  // angle and stays there, so the endpoint is maximally displaced from the straight path.
+  const bend = lerp(0, 130, M) * (70 / b);
+
+  // dashed reference: where the ray would go with NO mass (a straight line)
+  ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.setLineDash([5, 5]); ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, rayY0); ctx.lineTo(cw, rayY0); ctx.stroke(); ctx.setLineDash([]);
+
+  // the bent ray: straight in, bends down near the mass, straight out at a new angle
   ctx.strokeStyle = C.sun; ctx.lineWidth = 2.4;
   ctx.beginPath();
   let started = false;
   let endX = 0, endY = 0, prevX = 0, prevY = 0;
   for (let x = 0; x <= cw; x += 4) {
-    // deflection accumulates near closest approach; bend angle grows with M
-    const dxc = x - cx;
-    // simple lensing proxy: vertical pull proportional to 1/(dist^2) integrated as a smooth dip
-    const dist = Math.hypot(dxc, b);
-    const bendStrength = lerp(6, 95, M);
-    const yShift = bendStrength * (0.5 + 0.5 * Math.tanh(dxc / (wellR * 0.5))) * (b / (dist));
-    const y = rayY0 + yShift * 0.5;
+    const s = (x - cx) / (wellR * 0.5);
+    const frac = 0.5 * (1 + Math.tanh(s));   // smooth 0→1 step localized at the mass
+    const y = rayY0 + bend * frac;
     if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
     prevX = x; prevY = y; endX = x; endY = y;
   }
@@ -110,17 +121,27 @@ function draw(ctx, cw, H, M, lang) {
   ctx.lineTo(endX - 9 * Math.cos(ang + 0.4), endY - 9 * Math.sin(ang + 0.4));
   ctx.closePath(); ctx.fill();
 
-  // central mass
-  const g = ctx.createRadialGradient(cx - massR * 0.3, cy - massR * 0.3, 1, cx, cy, massR + 10);
+  // deflection marker at the right edge: the gap between the straight path and the bent exit
+  if (bend > 2) {
+    ctx.strokeStyle = "rgba(255,223,138,0.7)"; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(endX - 2, rayY0); ctx.lineTo(endX - 2, endY); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.sun; ctx.font = `10px ${mono}`; ctx.textAlign = "right";
+    ctx.fillText(t.dev, endX - 8, (rayY0 + endY) / 2 + 3);
+  }
+
+  // central mass — drawn at the bottom of the well (starCy)
+  const g = ctx.createRadialGradient(cx - massR * 0.3, starCy - massR * 0.3, 1, cx, starCy, massR + 10);
   g.addColorStop(0, "#fff0c0"); g.addColorStop(0.5, C.sun); g.addColorStop(1, "rgba(255,120,60,0)");
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, massR + 10, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#ffdf8a"; ctx.beginPath(); ctx.arc(cx, cy, massR, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, starCy, massR + 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffdf8a"; ctx.beginPath(); ctx.arc(cx, starCy, massR, 0, Math.PI * 2); ctx.fill();
 
   // labels (horizontal)
   ctx.fillStyle = C.sun; ctx.font = `12px ${mono}`; ctx.textAlign = "left";
   ctx.fillText(t.light, 10, rayY0 - 8);
-  ctx.fillStyle = "#ffdf8a"; ctx.textAlign = "center";
-  ctx.fillText(t.star, cx, cy + massR + 20);
+  ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.textAlign = "right";
+  ctx.fillText(t.noMass, cw - 10, rayY0 - 6);
+  ctx.fillStyle = "#ffdf8a"; ctx.font = `12px ${mono}`; ctx.textAlign = "center";
+  ctx.fillText(t.star, cx, starCy + massR + 20);
   ctx.fillStyle = C.text; ctx.textAlign = "right";
   ctx.fillText(`${t.mass}: ${(0.1 + M * 9.9).toFixed(1)}×`, cw - 10, 18);
 }
