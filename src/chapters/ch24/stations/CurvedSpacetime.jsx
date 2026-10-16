@@ -57,7 +57,7 @@ function draw(ctx, cw, H, M, lang) {
   const cx = cw * 0.5;
   const halfW = cw * 0.44;
   const frontY = H * 0.9, backY = H * 0.22;
-  const depthPx = lerp(18, 135, M);          // funnel depth grows with mass
+  const depthPx = lerp(18, 82, M);           // funnel depth grows with mass (capped so the Sun stays clear of the observer)
   const rc = 0.52;
   const persp = (v) => lerp(1.0, 0.46, v);   // horizontal compression with depth
   const dipAt = (u, v) => {
@@ -95,9 +95,11 @@ function draw(ctx, cw, H, M, lang) {
     ctx.stroke();
   }
 
-  // the Sun, sitting at the bottom of the funnel
-  const [sxS, syS] = project(0, 0.5);
-  const sunR = lerp(15, 30, M);
+  // the Sun, sitting at the bottom of the funnel (clamped so it never crowds the observer)
+  const [sxS, syS0] = project(0, 0.5);
+  const sunR = lerp(15, 22, M);
+  const botY = H * 0.95;
+  const syS = Math.min(syS0, botY - sunR - 54);
   const sg = ctx.createRadialGradient(sxS - sunR * 0.3, syS - sunR * 0.3, 2, sxS, syS, sunR + 10);
   sg.addColorStop(0, "#fff3b0"); sg.addColorStop(0.55, "#ffd23f"); sg.addColorStop(1, "rgba(255,150,40,0)");
   ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sxS, syS, sunR + 10, 0, Math.PI * 2); ctx.fill();
@@ -106,7 +108,7 @@ function draw(ctx, cw, H, M, lang) {
   // geometry: the star sits just behind the Sun (upper area, to the right). Its light
   // grazes the Sun's LEFT limb — reaching the surface only at maximum mass, never inside —
   // then bends down to the observer, who sees it shifted from its true direction.
-  const topY = H * 0.1, botY = H * 0.95;
+  const topY = H * 0.1;
   const gap = lerp(32, 6, M);                  // graze clearance: wide at low mass, skimming the limb at max
   const G = [sxS - (sunR + gap), syS];         // grazing point on the Sun's left limb
   const A = [sxS + 14, topY];                  // the star's TRUE position (behind the Sun, to the right)
@@ -157,7 +159,7 @@ export function CurvedSpacetime() {
   const lang = useLang();
   const t = STR[lang];
   const [wrapRef, w] = useMeasure();
-  const H = 300;
+  const H = 320;
   const canRef = useRef(null);
   const cw = Math.min(w, 760);
   const [M, setM] = useState(0.45);
