@@ -217,6 +217,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch23/index.html",
   },
+  {
+    n: 24,
+    title: { en: "Black Holes and Curved Spacetime", ja: "ブラックホールと曲がった時空" },
+    blurb: {
+      en: "Enter Einstein's universe — the equivalence principle, mass warping spacetime to bend starlight, clocks slowing and light reddening in deep gravity, the event horizon and Schwarzschild radius, the singularity and no-hair rule, X-ray accretion disks, tidal spaghettification, and the waves, shadows and orbiting stars that reveal the invisible.",
+      ja: "アインシュタインの宇宙へ——等価原理、星の光を曲げるために時空をゆがめる質量、深い重力で遅れる時計と赤くなる光、事象の地平面とシュヴァルツシルト半径、特異点と無毛のきまり、X線の降着円盤、潮汐によるスパゲッティ化、そして見えないものを明かす波・影・めぐる星々。",
+    },
+    href: "chapters/ch24/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
