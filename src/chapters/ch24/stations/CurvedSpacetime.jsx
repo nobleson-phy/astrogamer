@@ -103,19 +103,17 @@ function draw(ctx, cw, H, M, lang) {
   ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sxS, syS, sunR + 10, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#ffd23f"; ctx.beginPath(); ctx.arc(sxS, syS, sunR, 0, Math.PI * 2); ctx.fill();
 
-  // geometry of the light paths
-  const topY = H * 0.1;
-  const A = [cx - 66, topY];                 // the star's TRUE position (upper-left)
-  const O = [cx - 6, H * 0.95];              // the observer, at the front
-  const lrp = (p, q, f) => [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
-  const c1b = lrp(A, O, 0.4), c2b = lrp(A, O, 0.72);
-  const off = lerp(0, 95, M);                // 0 at no mass → perfectly straight ray
-  const c1 = [c1b[0] + off, c1b[1]];
-  const c2 = [c2b[0] + off * 0.75, c2b[1]];
-  // apparent star = straight extension of the light's arrival direction at the observer
-  const k = (topY - O[1]) / (c2[1] - O[1]);
-  const apparent = [O[0] + (c2[0] - O[0]) * k, topY];
-  const showApparent = M > 0.04;
+  // geometry: the star sits just behind the Sun (upper area, to the right). Its light
+  // grazes the Sun's LEFT limb — reaching the surface only at maximum mass, never inside —
+  // then bends down to the observer, who sees it shifted from its true direction.
+  const topY = H * 0.1, botY = H * 0.95;
+  const gap = lerp(32, 6, M);                  // graze clearance: wide at low mass, skimming the limb at max
+  const G = [sxS - (sunR + gap), syS];         // grazing point on the Sun's left limb
+  const A = [sxS + 14, topY];                  // the star's TRUE position (behind the Sun, to the right)
+  const O = [sxS - 30, botY];                  // the observer, at the front
+  // apparent star = straight back-extension of the ray as it arrives at the observer
+  const k = (topY - O[1]) / (G[1] - O[1]);
+  const apparent = [O[0] + (G[0] - O[0]) * k, topY];
 
   const drawStar = (x, y, col) => {
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
@@ -127,30 +125,27 @@ function draw(ctx, cw, H, M, lang) {
   ctx.setLineDash([5, 5]); ctx.lineWidth = 1.3;
   ctx.strokeStyle = "rgba(255,255,255,0.45)";
   ctx.beginPath(); ctx.moveTo(O[0], O[1]); ctx.lineTo(A[0], A[1]); ctx.stroke();            // actual
-  if (showApparent) {
-    ctx.strokeStyle = "rgba(255,223,138,0.65)";
-    ctx.beginPath(); ctx.moveTo(O[0], O[1]); ctx.lineTo(apparent[0], apparent[1]); ctx.stroke();  // apparent
-  }
+  ctx.strokeStyle = "rgba(255,223,138,0.65)";
+  ctx.beginPath(); ctx.moveTo(O[0], O[1]); ctx.lineTo(apparent[0], apparent[1]); ctx.stroke();  // apparent
   ctx.setLineDash([]);
 
-  // the real, curved light ray — follows the contour of spacetime
+  // the real light ray: star → graze the limb at G → observer, with a rounded bend
+  const lrp = (p, q, f) => [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+  const p1 = lrp(A, G, 0.82), p2 = lrp(G, O, 0.18);
   ctx.strokeStyle = C.sun; ctx.lineWidth = 2.6;
-  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], O[0], O[1]); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(p1[0], p1[1]); ctx.quadraticCurveTo(G[0], G[1], p2[0], p2[1]); ctx.lineTo(O[0], O[1]); ctx.stroke();
 
-  // star markers
+  // star markers + observer
   drawStar(A[0], A[1], "#fff0b0");
-  if (showApparent) drawStar(apparent[0], apparent[1], "rgba(255,223,138,0.85)");
-  // observer marker
+  drawStar(apparent[0], apparent[1], "rgba(255,223,138,0.85)");
   ctx.fillStyle = "#dbe4ff"; ctx.beginPath(); ctx.arc(O[0], O[1], 4, 0, Math.PI * 2); ctx.fill();
 
   // labels (horizontal)
   ctx.font = `10px ${mono}`; ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
   ctx.fillText(t.actualDir, clamp(A[0], 72, cw - 72), A[1] + 16);
-  if (showApparent) {
-    ctx.fillStyle = "rgba(255,223,138,0.9)";
-    ctx.fillText(t.apparentDir, clamp(apparent[0], 72, cw - 72), apparent[1] + 16);
-  }
+  ctx.fillStyle = "rgba(255,223,138,0.9)";
+  ctx.fillText(t.apparentDir, clamp(apparent[0], 72, cw - 72), apparent[1] + 16);
   ctx.fillStyle = "#ffd23f";
   ctx.fillText(t.sunLabel, clamp(sxS, 80, cw - 80), syS + sunR + 18 > H - 6 ? syS - sunR - 10 : syS + sunR + 18);
   ctx.fillStyle = "#dbe4ff"; ctx.textAlign = "left"; ctx.fillText(t.observer, O[0] + 8, O[1] - 2);
