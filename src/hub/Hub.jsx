@@ -226,6 +226,15 @@ const CHAPTERS = [
     },
     href: "chapters/ch24/index.html",
   },
+  {
+    n: 25,
+    title: { en: "The Milky Way Galaxy", ja: "天の川銀河" },
+    blurb: {
+      en: "Map our home galaxy — a 100,000-light-year disk with a central bulge and vast halo, how dust fooled Herschel while globular clusters revealed our off-center place, spiral arms and the Orion Spur, seeing through dust with 21-cm radio and infrared, a flat rotation curve betraying a 95% dark-matter halo, the 4.6-million-M☉ black hole Sgr A*, two stellar populations, and a galaxy built by mergers and bound for one with Andromeda.",
+      ja: "私たちの故郷の銀河を描こう——中央のバルジと広大なハローをもつ10万光年の円盤、塵がハーシェルをだます一方で球状星団が中心から外れた私たちの位置を明かしたこと、渦巻腕とオリオン腕、21cm電波と赤外線で塵を透かし見ること、95%のダークマターハローを暴く平らな回転曲線、460万M☉のブラックホールいて座A*、2つの星の種族、そして合体で築かれアンドロメダとの合体へ向かう銀河。",
+    },
+    href: "chapters/ch25/index.html",
+  },
 ];
 
 const MORE = { en: "More chapters coming", ja: "続く章は準備中" };
