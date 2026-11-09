@@ -86,19 +86,16 @@ function draw(ctx, cw, H, band, tt, lang) {
   bg.addColorStop(0, `rgba(255,243,176,${bA})`); bg.addColorStop(1, "rgba(255,180,80,0)");
   ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fill();
 
-  // dust veil over everything (thick in visible, gone in radio)
+  // dust veil over everything (thick in visible, gone in radio) — a STATIC smooth
+  // obscuration, not drifting particles: a brown haze plus a few in-plane dust lanes.
   const dustA = (1 - reveal) * 0.82;
   if (dustA > 0.02) {
-    for (let i = 0; i < 90; i++) {
-      const a = i * 2.3994, r = R * Math.sqrt(((i * 31 + tt * 0.3) % 100) / 100);
-      const dx = cx + Math.cos(a) * r, dy = cy + Math.sin(a) * r * 0.9;
-      ctx.fillStyle = `rgba(110,80,55,${dustA * (0.4 + 0.3 * ((i * 17) % 10) / 10)})`;
-      ctx.beginPath(); ctx.arc(dx, dy, 7, 0, Math.PI * 2); ctx.fill();
-    }
-    // overall brown haze
-    const hz = ctx.createRadialGradient(cx, cy, 10, cx, cy, R);
-    hz.addColorStop(0, `rgba(90,66,44,${dustA * 0.5})`); hz.addColorStop(1, "rgba(70,52,36,0)");
+    const hz = ctx.createRadialGradient(cx, cy, 8, cx, cy, R);
+    hz.addColorStop(0, `rgba(92,68,46,${dustA * 0.72})`); hz.addColorStop(0.7, `rgba(78,58,40,${dustA * 0.4})`); hz.addColorStop(1, "rgba(70,52,36,0)");
     ctx.fillStyle = hz; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    // dark dust lanes lying in the disk plane (where the obscuration is worst)
+    ctx.fillStyle = `rgba(55,40,28,${dustA * 0.55})`;
+    for (const yo of [-9, 2, 11]) { ctx.beginPath(); ctx.ellipse(cx, cy + yo, R * 0.96, 5, 0, 0, Math.PI * 2); ctx.fill(); }
   }
 
   // 21-cm spin-flip inset diagram (radio only)

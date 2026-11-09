@@ -9,7 +9,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLang } from "../../../shared/i18n.jsx";
 import { C, mono, display, reduceMotion } from "../../../shared/theme.js";
-import { useMeasure, setupCanvas, lerp } from "../../../shared/helpers.js";
+import { useMeasure, setupCanvas, lerp, clamp } from "../../../shared/helpers.js";
 import { styles } from "../../../shared/styles.js";
 import { InfoPanel } from "../../../shared/ui.jsx";
 
@@ -102,37 +102,43 @@ function draw(ctx, cw, H, hi, tt, lang) {
   ctx.fillStyle = `rgba(255,210,61,${(0.9 * dim).toFixed(2)})`; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
   ctx.fillText(t.center, cx, cy + 26);
 
-  // the Sun's position (in the Orion Spur), between Sagittarius (inner) and Perseus (outer)
-  const sunAng = 0.3 + Math.PI * 1.9 * 0.60;     // along the Sagittarius region
-  const sunR = 18 + (R - 18) * 0.66;
-  const sx = cx + Math.cos(sunAng) * sunR + 14;
-  const sy = cy + Math.sin(sunAng) * sunR - 6;
+  // the ORION SPUR — a short partial arm sitting in the GAP between the major arms.
+  // The Sun rides ON this spur, clearly OFF the grand arms.
+  const spurA0 = 1.10;                            // chosen so the spur stays in an inter-arm gap
+  const spurPt = (f) => {
+    const th = Math.PI * 1.9 * f;
+    const r = 18 + (R - 18) * f;
+    const ang = spurA0 + th;
+    return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r];
+  };
+  // draw the spur itself (short; distinct colour; brightened when highlighting)
+  ctx.strokeStyle = hi ? C.good : "rgba(150,235,190,0.6)";
+  ctx.lineWidth = hi ? 5 : 3.2;
+  ctx.beginPath();
+  let sfirst = true;
+  for (let f = 0.52; f <= 0.74; f += 0.01) {
+    const [x, y] = spurPt(f);
+    if (sfirst) { ctx.moveTo(x, y); sfirst = false; } else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
 
+  const [sx, sy] = spurPt(0.63);                  // the Sun, on the spur
   if (hi) {
-    // draw a short highlighted spur fragment near the Sun
-    ctx.strokeStyle = C.good; ctx.lineWidth = 5;
-    ctx.beginPath();
-    for (let k = -0.35; k <= 0.35; k += 0.03) {
-      const ang = sunAng + k;
-      const r = sunR + k * 40;
-      const x = cx + Math.cos(ang) * r + 14, y = cy + Math.sin(ang) * r - 6;
-      if (k <= -0.35 + 0.001) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    // zoom ring
     const ring = 26 + 4 * Math.sin(tt * 0.1);
     ctx.strokeStyle = C.sun; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(sx, sy, ring, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = C.good; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
-    ctx.fillText(t.orion, sx, sy - ring - 6 < 14 ? sy + ring + 14 : sy - ring - 6);
   }
+  // Orion Spur label, placed at the spur's outer end (both modes)
+  { const [lx, ly] = spurPt(0.74);
+    ctx.fillStyle = hi ? C.good : "rgba(150,235,190,0.95)"; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
+    ctx.fillText(t.orion, clamp(lx, 60, cw - 60), ly - 10 < 14 ? ly + 16 : ly - 10); }
 
-  // the Sun marker
+  // the Sun marker ON the spur
   const sg = ctx.createRadialGradient(sx, sy, 1, sx, sy, 7);
   sg.addColorStop(0, "#fff3b0"); sg.addColorStop(1, C.sun);
   ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = C.sun; ctx.font = `11px ${mono}`; ctx.textAlign = "left";
-  ctx.fillText(t.sunLabel, Math.min(sx + 9, cw - 110), sy + 4);
+  ctx.fillText(t.sunLabel, clamp(sx + 9, 10, cw - 110), sy + 4);
 
   // arm labels around the edge (overview only, so they never clutter the zoom)
   if (!hi) {

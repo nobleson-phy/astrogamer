@@ -114,25 +114,32 @@ function drawCollision(ctx, cw, H, tt, lang) {
   const g1x = cw * 0.5 - sep, g2x = cw * 0.5 + sep;
   const merged = phase > 0.82;
 
-  const drawSpiral = (gx, col, rot) => {
-    const R = Math.min(cw * 0.2, 80) * (1 - phase * 0.25);
+  // disruption grows once the galaxies get close — their spiral shapes stretch, unwind and fade
+  const distort = clamp((phase - 0.4) / 0.42, 0, 1);
+  const drawSpiral = (gx, col, rot, toward) => {
+    const R = Math.min(cw * 0.2, 80) * (1 - phase * 0.2);
     for (let s = 0; s < 2; s++) {
-      ctx.strokeStyle = col; ctx.lineWidth = 4;
+      ctx.strokeStyle = col; ctx.globalAlpha = 1 - distort * 0.5; ctx.lineWidth = 4;
       ctx.beginPath(); let first = true;
       for (let th = 0; th < Math.PI * 2; th += 0.06) {
-        const r = 6 + (R - 6) * (th / (Math.PI * 2));
-        const ang = th + s * Math.PI + rot;
-        const x = gx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r * 0.7;
+        const frac = th / (Math.PI * 2);
+        const r = 6 + (R - 6) * frac;
+        const ang = th + s * Math.PI + rot * (1 - distort * 0.5);   // unwinds as it disrupts
+        // outer stars are drawn out toward the companion (tidal stretch) and warped
+        const stretch = distort * frac * 52 * toward;
+        const x = gx + Math.cos(ang) * r + stretch;
+        const y = cy + Math.sin(ang) * r * 0.7 + distort * frac * 16 * Math.sin(th * 1.5);
         if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
       }
       ctx.stroke();
     }
-    ctx.fillStyle = "#ffd23f"; ctx.beginPath(); ctx.arc(gx, cy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffd23f"; ctx.beginPath(); ctx.arc(gx + distort * 10 * toward, cy, 5, 0, Math.PI * 2); ctx.fill();
   };
 
   if (!merged) {
-    drawSpiral(g1x, "rgba(120,170,255,0.8)", tt * 0.01);
-    drawSpiral(g2x, "rgba(255,180,140,0.8)", -tt * 0.012);
+    drawSpiral(g1x, "rgba(120,170,255,0.8)", tt * 0.01, 1);
+    drawSpiral(g2x, "rgba(255,180,140,0.8)", -tt * 0.012, -1);
     // tidal tails as the galaxies get close
     if (phase > 0.4) {
       ctx.strokeStyle = "rgba(200,180,255,0.5)"; ctx.lineWidth = 2;

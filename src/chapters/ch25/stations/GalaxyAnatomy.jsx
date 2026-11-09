@@ -100,30 +100,32 @@ function draw(ctx, cw, H, view, tt, lang) {
     ctx.fillStyle = "rgba(201,170,255,0.9)"; ctx.textAlign = "left";
     ctx.fillText(t.haloLabel, 12, 18);
   } else {
-    // EDGE-ON cross-section
-    // spherical halo outline + globular clusters
-    const haloR = Math.min(cw * 0.42, H * 0.42);
-    ctx.strokeStyle = "rgba(201,170,255,0.3)"; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+    // EDGE-ON: a thin, strictly horizontal disk with a central bulge, a dust lane,
+    // and a spherical halo of globular clusters (nothing points out of the plane).
+    const haloR = Math.min(cw * 0.44, H * 0.46);
+    ctx.strokeStyle = "rgba(201,170,255,0.28)"; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
     ctx.beginPath(); ctx.arc(cx, cy, haloR, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    for (let i = 0; i < 40; i++) {
-      const a = i * 2.3994, r = haloR * (0.35 + 0.6 * ((i * 53) % 100) / 100);
+    for (let i = 0; i < 34; i++) {
+      const a = i * 2.3994, r = haloR * (0.4 + 0.58 * ((i * 53) % 100) / 100);
       const gx = cx + Math.cos(a) * r, gy = cy + Math.sin(a) * r;
+      if (Math.abs(gy - cy) < 12) continue;   // keep clusters off the disk line so it reads cleanly
       ctx.fillStyle = "rgba(201,170,255,0.5)";
-      ctx.beginPath(); ctx.arc(gx, gy, 2.1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx, gy, 2, 0, Math.PI * 2); ctx.fill();
     }
-    // thin disk (a wide, very thin ellipse seen edge-on)
-    const diskW = Math.min(cw * 0.40, haloR * 0.95);
-    const thick = 10;
+    const diskW = haloR * 0.96, thick = 7;
+    // luminous thin disk seen edge-on (wide, flat, horizontal)
     const dg = ctx.createLinearGradient(cx - diskW, cy, cx + diskW, cy);
-    dg.addColorStop(0, "rgba(120,160,255,0)"); dg.addColorStop(0.5, "rgba(170,200,255,0.9)"); dg.addColorStop(1, "rgba(120,160,255,0)");
-    ctx.fillStyle = dg;
-    ctx.beginPath(); ctx.ellipse(cx, cy, diskW, thick, 0, 0, Math.PI * 2); ctx.fill();
-    // central bulge swelling
+    dg.addColorStop(0, "rgba(120,160,255,0)"); dg.addColorStop(0.5, "rgba(182,206,255,0.95)"); dg.addColorStop(1, "rgba(120,160,255,0)");
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.ellipse(cx, cy, diskW, thick, 0, 0, Math.PI * 2); ctx.fill();
+    // central bulge: a rounded swell straddling the midplane
     const bg = ctx.createRadialGradient(cx, cy, 2, cx, cy, 30);
-    bg.addColorStop(0, "#fff2c0"); bg.addColorStop(0.5, "rgba(255,200,100,0.7)"); bg.addColorStop(1, "rgba(255,180,80,0)");
-    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, 34, 22, 0, 0, Math.PI * 2); ctx.fill();
-    // Sun marker out in the disk plane
-    const sx = cx + diskW * 0.62, sy = cy;
+    bg.addColorStop(0, "#fff2c0"); bg.addColorStop(0.5, "rgba(255,205,110,0.75)"); bg.addColorStop(1, "rgba(255,180,80,0)");
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, 30, 20, 0, 0, Math.PI * 2); ctx.fill();
+    // thin dark dust lane along the midplane
+    ctx.fillStyle = "rgba(18,12,8,0.5)";
+    ctx.beginPath(); ctx.ellipse(cx, cy + 1, diskW * 0.9, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+    // Sun in the disk plane
+    const sx = cx + diskW * 0.6, sy = cy;
     ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(sx, sy, 3.5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = C.sun; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = C.sun; ctx.font = `11px ${mono}`; ctx.textAlign = "center";
@@ -135,9 +137,9 @@ function draw(ctx, cw, H, view, tt, lang) {
     ctx.beginPath(); ctx.moveTo(bxL - 4, cy - thick); ctx.lineTo(bxL + 4, cy - thick); ctx.moveTo(bxL - 4, cy + thick); ctx.lineTo(bxL + 4, cy + thick); ctx.stroke();
     // labels
     ctx.fillStyle = C.cool; ctx.font = `11px ${mono}`; ctx.textAlign = "left";
-    ctx.fillText(t.thickLabel, 12, cy + 4 > H - 30 ? cy - 20 : cy + 4);
+    ctx.fillText(t.thickLabel, 12, cy - 6);
     ctx.fillStyle = "#ffe08a"; ctx.textAlign = "center";
-    ctx.fillText(t.bulgeLabel, cx, cy + 40);
+    ctx.fillText(t.bulgeLabel, cx, cy + 42);
     ctx.fillStyle = "rgba(201,170,255,0.9)"; ctx.textAlign = "center";
     ctx.fillText(t.haloLabel, cx, H - 12);
     ctx.fillStyle = "#cfe0ff"; ctx.textAlign = "center";
